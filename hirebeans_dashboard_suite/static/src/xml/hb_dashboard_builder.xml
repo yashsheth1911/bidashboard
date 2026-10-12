@@ -112,6 +112,126 @@
         </div>
       </div>
 
+      <!-- ── Filter Bar ────────────────────────────────────────────────── -->
+      <t t-if="state.configEnableFilterbar">
+        <div class="hb-filter-bar" style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:8px 16px;border-bottom:1px solid var(--hb-border);">
+          <i class="fa fa-filter" style="color:var(--hb-text-muted);font-size:12px"/>
+
+          <t t-foreach="state.filterChips" t-as="chip" t-key="chip.id">
+            <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--hb-badge-bg);border:1px solid var(--hb-border);font-size:12px;">
+              <i t-if="chip.source === 'click'" class="fa fa-hand-pointer-o" style="color:var(--hb-primary)" title="From chart click"/>
+              <span>
+                <t t-esc="chip.modelLabel"/>: <t t-esc="chip.fieldLabel"/> <t t-esc="chip.operator"/> <t t-esc="chip.valueLabel"/>
+              </span>
+              <i class="fa fa-times" style="cursor:pointer;opacity:.6" t-on-click="() => this.removeFilterChip(chip.id)"/>
+            </span>
+          </t>
+
+          <div style="position:relative">
+            <button class="hb-btn hb-btn-outline" style="padding:4px 10px;font-size:12px" t-on-click="openFilterPopover">
+              <i class="fa fa-plus"/> Add Filter
+            </button>
+
+            <t t-if="state.filterPopover.open">
+              <div style="position:absolute;z-index:300;top:32px;left:0;width:300px;background:var(--hb-card-bg);border:1px solid var(--hb-border);border-radius:var(--hb-radius-sm);box-shadow:var(--hb-card-shadow);padding:12px;">
+
+                <div style="font-size:11px;font-weight:700;color:var(--hb-text-muted);text-transform:uppercase;margin-bottom:8px;">New Filter</div>
+
+                <!-- Model picker -->
+                <div style="position:relative;margin-bottom:8px">
+                  <input type="text" placeholder="Type to search model…"
+                         t-att-value="state.filterPopover.modelSelOpen ? state.filterPopover.modelSelQuery : state.filterPopover.modelLabel"
+                         t-on-focus="filterPopoverModelFocus"
+                         t-on-blur="filterPopoverModelBlur"
+                         t-on-input="filterPopoverModelSearch"/>
+                  <t t-if="state.filterPopover.modelSelOpen">
+                    <div style="position:absolute;z-index:310;left:0;right:0;top:100%;background:var(--hb-card-bg);border:1px solid var(--hb-border);border-radius:var(--hb-radius-sm);box-shadow:0 4px 12px rgba(0,0,0,.18);max-height:180px;overflow-y:auto">
+                      <t t-if="state.modelsLoading">
+                        <div style="padding:8px 12px;font-size:12px;color:var(--hb-text-muted)"><i class="fa fa-spinner fa-spin"/> Searching…</div>
+                      </t>
+                      <t t-elif="!state.models or !state.models.length">
+                        <div style="padding:8px 12px;font-size:12px;color:var(--hb-text-muted)">No models found</div>
+                      </t>
+                      <t t-else="">
+                        <t t-foreach="state.models" t-as="m" t-key="m.id">
+                          <div style="padding:6px 12px;cursor:pointer;font-size:12px"
+                               t-on-mousedown="(ev) => { ev.preventDefault(); this.filterPopoverSelectModel(m.model, m.name); }">
+                            <span style="color:var(--hb-text-main)"><t t-esc="m.name"/></span>
+                            <span style="color:var(--hb-text-muted);margin-left:6px;font-size:11px">(<t t-esc="m.model"/>)</span>
+                          </div>
+                        </t>
+                      </t>
+                    </div>
+                  </t>
+                </div>
+
+                <!-- Field + operator + value -->
+                <t t-if="state.filterPopover.model">
+                  <t t-if="!state.filterPopover.fieldsLoaded">
+                    <div style="font-size:12px;color:var(--hb-text-muted);margin-bottom:8px"><i class="fa fa-spinner fa-spin"/> Loading fields…</div>
+                  </t>
+                  <t t-else="">
+                    <select style="width:100%;margin-bottom:8px" t-on-change="filterPopoverOnField">
+                      <option value="">— field —</option>
+                      <t t-foreach="state.filterPopover.fields" t-as="f" t-key="f.name">
+                        <option t-att-value="f.name" t-att-selected="state.filterPopover.field === f.name">
+                          <t t-esc="f.string"/> (<t t-esc="f.name"/>)
+                        </option>
+                      </t>
+                    </select>
+
+                    <t t-if="state.filterPopover.field">
+                      <select style="width:100%;margin-bottom:8px" t-on-change="filterPopoverOnOp">
+                        <t t-foreach="this._getDomainOperators(state.filterPopover.fieldType)" t-as="op" t-key="op.v">
+                          <option t-att-value="op.v" t-att-selected="state.filterPopover.operator === op.v">
+                            <t t-esc="op.l"/>
+                          </option>
+                        </t>
+                      </select>
+
+                      <t t-if="state.filterPopover.fieldType === 'boolean'">
+                        <select style="width:100%;margin-bottom:10px" t-on-change="filterPopoverOnValue">
+                          <option value="true">True</option>
+                          <option value="false">False</option>
+                        </select>
+                      </t>
+                      <t t-elif="state.filterPopover.fieldType === 'selection'">
+                        <select style="width:100%;margin-bottom:10px" t-on-change="filterPopoverOnValue">
+                          <option value="">— select —</option>
+                          <t t-foreach="state.filterPopover.selectionOptions" t-as="opt" t-key="opt[0]">
+                            <option t-att-value="opt[0]"><t t-esc="opt[1]"/></option>
+                          </t>
+                        </select>
+                      </t>
+                      <t t-elif="['integer','float','monetary'].includes(state.filterPopover.fieldType)">
+                        <input type="number" style="width:100%;margin-bottom:10px" t-on-input="filterPopoverOnValue"/>
+                      </t>
+                      <t t-elif="state.filterPopover.fieldType === 'date'">
+                        <input type="date" style="width:100%;margin-bottom:10px" t-on-change="filterPopoverOnValue"/>
+                      </t>
+                      <t t-else="">
+                        <input type="text" placeholder="Value" style="width:100%;margin-bottom:10px" t-on-input="filterPopoverOnValue"/>
+                      </t>
+                    </t>
+                  </t>
+                </t>
+
+                <div style="display:flex;gap:8px;justify-content:flex-end">
+                  <button class="hb-btn hb-btn-outline" style="font-size:12px;padding:4px 10px" t-on-click="closeFilterPopover">Cancel</button>
+                  <button class="hb-btn hb-btn-primary" style="font-size:12px;padding:4px 10px" t-on-click="addFilterChip">Add</button>
+                </div>
+              </div>
+            </t>
+          </div>
+
+          <t t-if="state.filterChips.length">
+            <button class="hb-btn hb-btn-icon" style="font-size:12px" title="Clear all filters" t-on-click="clearAllFilterChips">
+              <i class="fa fa-eraser"/>
+            </button>
+          </t>
+        </div>
+      </t>
+
       <!-- ── Grid ──────────────────────────────────────────────────────── -->
       <!-- Items are managed imperatively by GridStack JS, not OWL t-foreach -->
       <div class="hb-grid-container" t-att-class="{'hb-edit-mode': state.editMode, 'hb-view-mode': !state.editMode}">

@@ -96,6 +96,19 @@ export class HbDashboardBuilder extends Component {
                 date_to:     "",
             },
 
+            // Filter bar: manually-added chips + the one click-to-filter chip
+            // (cross-filtering). Both feed the same model_domain mechanism.
+            filterChips: [],
+            filterPopover: {
+                open: false,
+                modelSelOpen: false, modelSelQuery: "",
+                model: "", modelLabel: "",
+                fields: [], fieldsLoaded: false,
+                field: "", fieldLabel: "", fieldType: "char", selectionOptions: [],
+                operator: "=",
+                value: "",
+            },
+
             // Item dialog state
             editItem:       null,  // item being edited (null = new)
             itemForm:       this._emptyItemForm(),
@@ -575,6 +588,21 @@ export class HbDashboardBuilder extends Component {
                 this._navigateFromChart(item, params);
             });
         }
+
+        // Handle click-to-filter (cross-filtering): clicking a category on
+        // one chart filters every sibling chart on the same model. Skipped
+        // for items that already have a click behavior (drilldown/navigate)
+        // so a click never fires two conflicting actions.
+        const crossFilterField = item.x_field || item.groupby_field;
+        if (this.state.configEnableCrossfilter && !item.is_drill_down && !item.click_action_model
+            && crossFilterField && item.model_name
+            && ["bar", "line", "area", "pie", "doughnut", "funnel", "treemap"].includes(item.item_type)) {
+            chart.on("click", (params) => {
+                const value = params.name != null ? params.name : (Array.isArray(params.data) ? params.data[0] : null);
+                if (value == null || value === "") return;
+                this._applyCrossFilter(item.model_name, crossFilterField, value);
+            });
+        }
     }
 
     _buildChartOption(item) {
@@ -696,6 +724,160 @@ export class HbDashboardBuilder extends Component {
     async _refreshAllCharts() {
         const loadPromises = this.state.items.map(item => this._renderItemChart(item));
         await Promise.all(loadPromises);
+    }
+
+    // ─── Filter Bar (manual chips + click-to-filter) ─────────────────────────
+    // Both mechanisms feed the same state.filterChips list and the same
+    // filters.model_domain the backend applies per-item by model_name.
+
+    _recomputeModelDomain() {
+        const byModel = {};
+        for (const chip of this.state.filterChips) {
+            let val = chip.value;
+            if (["in", "not in"].includes(chip.operator)) {
+                val = String(val).split(",").map(s => s.trim()).filter(Boolean);
+            } else if (["integer", "float", "monetary"].includes(chip.fieldType)) {
+                val = Number(val);
+                if (isNaN(val)) val = 0;
+            } else if (chip.fieldType === "boolean") {
+                val = (val === "true" || val === true);
+            }
+            if (!byModel[chip.model]) byModel[chip.model] = [];
+            byModel[chip.model].push([chip.field, chip.operator, val]);
+        }
+        this.state.filters.model_domain = byModel;
+        this._refreshAllCharts();
+    }
+
+    // Clicking a chart segment: at most one click-driven chip is active at a
+    // time (clicking again replaces it, matching typical BI cross-filter UX).
+    async _applyCrossFilter(model, field, value) {
+        this.state.filterChips = this.state.filterChips.filter(c => c.source !== "click");
+
+        let fieldType = "char", fieldLabel = field, operator = "=";
+        try {
+            const res = await rpc("/hb_dashboard/get_fields", { model_name: model });
+            if (res.status === "ok") {
+                const f = (res.data || []).find(f => f.name === field);
+                if (f) {
+                    fieldType = f.type;
+                    fieldLabel = f.string || field;
+                }
+            }
+        } catch (e) { /* fall back to defaults below */ }
+        // Many2one groupby values are display names, not ids — 'ilike' lets
+        // the ORM resolve them via name match instead of requiring an id.
+        if (fieldType === "many2one") operator = "ilike";
+
+        this.state.filterChips = [...this.state.filterChips, {
+            id: `click-${Date.now()}`,
+            source: "click",
+            model, modelLabel: model,
+            field, fieldLabel, fieldType,
+            operator, value,
+            valueLabel: String(value),
+        }];
+        this._recomputeModelDomain();
+    }
+
+    removeFilterChip(id) {
+        this.state.filterChips = this.state.filterChips.filter(c => c.id !== id);
+        this._recomputeModelDomain();
+    }
+
+    clearAllFilterChips() {
+        this.state.filterChips = [];
+        this._recomputeModelDomain();
+    }
+
+    // ── Add-filter popover ────────────────────────────────────────────────
+    openFilterPopover() {
+        this.state.filterPopover = {
+            open: true,
+            modelSelOpen: false, modelSelQuery: "",
+            model: "", modelLabel: "",
+            fields: [], fieldsLoaded: false,
+            field: "", fieldLabel: "", fieldType: "char", selectionOptions: [],
+            operator: "=",
+            value: "",
+        };
+    }
+
+    closeFilterPopover() {
+        this.state.filterPopover.open = false;
+    }
+
+    async filterPopoverModelFocus() {
+        this.state.filterPopover.modelSelOpen = true;
+        this.state.filterPopover.modelSelQuery = this.state.filterPopover.modelLabel || "";
+        await this._loadModels(this.state.filterPopover.modelSelQuery);
+    }
+
+    filterPopoverModelBlur() {
+        setTimeout(() => { this.state.filterPopover.modelSelOpen = false; }, 220);
+    }
+
+    filterPopoverModelSearch(ev) {
+        const q = ev.target.value;
+        this.state.filterPopover.modelSelQuery = q;
+        clearTimeout(this._filterPopoverModelTimer);
+        this._filterPopoverModelTimer = setTimeout(() => this._loadModels(q), 250);
+    }
+
+    async filterPopoverSelectModel(modelName, modelLabel) {
+        this.state.filterPopover.model = modelName;
+        this.state.filterPopover.modelLabel = modelLabel;
+        this.state.filterPopover.modelSelOpen = false;
+        this.state.filterPopover.field = "";
+        this.state.filterPopover.fields = [];
+        this.state.filterPopover.fieldsLoaded = false;
+        try {
+            const res = await rpc("/hb_dashboard/get_fields", { model_name: modelName });
+            this.state.filterPopover.fields = res.status === "ok" ? (res.data || []) : [];
+        } catch (e) {
+            this.state.filterPopover.fields = [];
+        }
+        this.state.filterPopover.fieldsLoaded = true;
+    }
+
+    filterPopoverOnField(ev) {
+        const fieldName = ev.target.value;
+        const field = this.state.filterPopover.fields.find(f => f.name === fieldName);
+        const fieldType = field ? field.type : "char";
+        const ops = this._getDomainOperators(fieldType);
+        this.state.filterPopover.field = fieldName;
+        this.state.filterPopover.fieldLabel = field ? field.string : fieldName;
+        this.state.filterPopover.fieldType = fieldType;
+        this.state.filterPopover.selectionOptions = field && fieldType === "selection" ? (field.selection || []) : [];
+        this.state.filterPopover.operator = ops[0] ? ops[0].v : "=";
+        this.state.filterPopover.value = "";
+    }
+
+    filterPopoverOnOp(ev) {
+        this.state.filterPopover.operator = ev.target.value;
+    }
+
+    filterPopoverOnValue(ev) {
+        const val = ev.target.type === "checkbox" ? ev.target.checked : ev.target.value;
+        this.state.filterPopover.value = val;
+    }
+
+    addFilterChip() {
+        const p = this.state.filterPopover;
+        if (!p.model || !p.field) {
+            this._toast("Pick a model and a field first", "error");
+            return;
+        }
+        this.state.filterChips = [...this.state.filterChips, {
+            id: `manual-${Date.now()}`,
+            source: "manual",
+            model: p.model, modelLabel: p.modelLabel,
+            field: p.field, fieldLabel: p.fieldLabel, fieldType: p.fieldType,
+            operator: p.operator, value: p.value,
+            valueLabel: p.fieldType === "boolean" ? (p.value ? "true" : "false") : String(p.value),
+        }];
+        this.state.filterPopover.open = false;
+        this._recomputeModelDomain();
     }
 
     _disposeAll() {

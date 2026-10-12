@@ -307,6 +307,21 @@ class HbDashboardController(http.Controller):
             except Exception:
                 pass
 
+        # Per-model filters: dashboard filter-bar chips and click-to-filter
+        # (cross-filtering). Keyed by model_name so a filter built from one
+        # chart (e.g. CRM stage) only applies to sibling items on the same
+        # model, leaving items from other models untouched.
+        model_domain = filters.get('model_domain')
+        if model_domain:
+            try:
+                if isinstance(model_domain, str):
+                    model_domain = json.loads(model_domain)
+                extra = model_domain.get(item.model_name) if isinstance(model_domain, dict) else None
+                if extra:
+                    domain.extend(extra)
+            except Exception:
+                pass
+
         return domain
 
     def _build_date_domain(self, field, preset, date_from=None, date_to=None):
