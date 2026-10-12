@@ -1,6 +1,6 @@
 {
     'name': 'BI Dashboard',
-    'version': '19.0.1.3.0',
+    'version': '19.0.1.3.1',
     'category': 'Reporting/Dashboard',
     'summary': 'Advanced BI Dashboard Builder with AI, 17 chart types, drag-drop, real-time data',
     'description': """
