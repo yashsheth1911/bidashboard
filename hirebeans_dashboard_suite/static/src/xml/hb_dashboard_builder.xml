@@ -1,0 +1,299 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<!-- ─── Dashboard Builder / Viewer ───────────────────────────────────────── -->
+<t t-name="hirebeans_dashboard_suite.DashboardBuilder">
+  <div class="hb-dashboard-root" t-att-class="{'hb-dark': state.dashboard and state.dashboard.theme === 'dark'}">
+
+    <!-- Loading -->
+    <t t-if="state.loading">
+      <div class="hb-page-loading">
+        <div class="hb-spinner-lg"/>
+        <span>Loading dashboard…</span>
+      </div>
+    </t>
+
+    <t t-elif="state.dashboard">
+
+      <!-- ── Toolbar ────────────────────────────────────────────────────── -->
+      <div class="hb-builder-toolbar">
+        <div class="hb-toolbar-left">
+          <!-- Back -->
+          <button class="hb-btn hb-btn-icon" title="Back to dashboards" t-on-click="goHome">
+            <i class="fa fa-arrow-left"/>
+          </button>
+
+          <!-- Title -->
+          <span class="hb-dashboard-title" t-esc="state.dashboard.name"/>
+
+          <!-- Date filter -->
+          <div class="hb-date-filter">
+            <i class="fa fa-calendar-o" style="color:var(--hb-text-muted)"/>
+            <select t-on-change="onDateFilterChange">
+              <t t-foreach="dateFilterOptions" t-as="opt" t-key="opt.value">
+                <option t-att-value="opt.value" t-att-selected="state.filters.date_filter === opt.value">
+                  <t t-esc="opt.label"/>
+                </option>
+              </t>
+            </select>
+            <t t-if="isCustomDateFilter()">
+              <input type="date" t-att-value="state.filters.date_from" t-on-change="onDateFromChange" title="From"/>
+              <span style="color:var(--hb-text-muted)">—</span>
+              <input type="date" t-att-value="state.filters.date_to" t-on-change="onDateToChange" title="To"/>
+            </t>
+          </div>
+
+          <!-- Refresh -->
+          <button class="hb-btn hb-btn-icon" title="Refresh all charts" t-on-click="() => this._refreshAllCharts()">
+            <i class="fa fa-refresh"/>
+          </button>
+        </div>
+
+        <div class="hb-toolbar-right">
+          <!-- Bookmark -->
+          <button class="hb-btn hb-btn-icon" t-att-class="{'active': state.dashboard.is_bookmarked}" title="Bookmark"
+                  t-on-click="toggleBookmark">
+            <i t-att-class="state.dashboard.is_bookmarked ? 'fa fa-bookmark' : 'fa fa-bookmark-o'"/>
+          </button>
+
+          <!-- Theme toggle -->
+          <button class="hb-btn hb-btn-icon" t-on-click="toggleTheme" title="Toggle theme">
+            <i t-att-class="state.dashboard.theme === 'dark' ? 'fa fa-sun-o' : 'fa fa-moon-o'"/>
+          </button>
+
+          <!-- AI -->
+          <button class="hb-btn hb-btn-icon" t-att-class="{'active': state.aiPanelOpen}"
+                  title="AI Assistant" t-on-click="toggleAiPanel">
+            <i class="fa fa-magic"/>
+          </button>
+
+          <!-- Export -->
+          <div style="position:relative">
+            <button class="hb-btn hb-btn-outline" t-on-click="toggleExportMenu">
+              <i class="fa fa-download"/> Export <i class="fa fa-caret-down"/>
+            </button>
+            <t t-if="state.showExportMenu">
+              <div style="position:absolute;top:38px;right:0;background:var(--hb-card-bg);border:1px solid var(--hb-border);border-radius:var(--hb-radius-sm);box-shadow:var(--hb-card-shadow);z-index:200;min-width:160px;padding:6px 0;">
+                <div class="hb-export-item" t-on-click="exportDashboardPNG"
+                     style="padding:8px 14px;cursor:pointer;font-size:13px;display:flex;gap:8px;align-items:center;">
+                  <i class="fa fa-image"/> Dashboard PNG
+                </div>
+                <div class="hb-export-item" t-on-click="exportDashboardPDF"
+                     style="padding:8px 14px;cursor:pointer;font-size:13px;display:flex;gap:8px;align-items:center;">
+                  <i class="fa fa-file-pdf-o"/> Dashboard PDF
+                </div>
+                <hr style="margin:4px 0;border:none;border-top:1px solid var(--hb-border)"/>
+                <div class="hb-export-item" t-on-click="exportJSON"
+                     style="padding:8px 14px;cursor:pointer;font-size:13px;display:flex;gap:8px;align-items:center;">
+                  <i class="fa fa-code"/> Export JSON
+                </div>
+              </div>
+            </t>
+          </div>
+
+          <!-- Settings -->
+          <button class="hb-btn hb-btn-icon" title="Dashboard settings" t-on-click="showDashboardSettings">
+            <i class="fa fa-cog"/>
+          </button>
+
+          <!-- Edit Mode Toggle -->
+          <button class="hb-btn" t-att-class="state.editMode ? 'hb-btn-primary' : 'hb-btn-outline'"
+                  t-on-click="toggleEditMode">
+            <i t-att-class="state.editMode ? 'fa fa-check' : 'fa fa-pencil'"/>
+            <t t-esc="state.editMode ? 'Done' : 'Edit'"/>
+          </button>
+
+          <!-- Add Item (edit mode only) -->
+          <t t-if="state.editMode">
+            <button class="hb-btn hb-btn-primary" t-on-click="showAddItem">
+              <i class="fa fa-plus"/> Add Item
+            </button>
+          </t>
+        </div>
+      </div>
+
+      <!-- ── Grid ──────────────────────────────────────────────────────── -->
+      <!-- Items are managed imperatively by GridStack JS, not OWL t-foreach -->
+      <div class="hb-grid-container" t-att-class="{'hb-edit-mode': state.editMode, 'hb-view-mode': !state.editMode}">
+        <div class="grid-stack" t-ref="gridContainer"/>
+        <t t-if="state.items.length === 0 and state.editMode">
+          <div style="padding:60px;text-align:center;color:var(--hb-text-muted);">
+            <i class="fa fa-plus-circle" style="font-size:48px;opacity:0.3;display:block;margin-bottom:16px"/>
+            <div style="font-size:16px;margin-bottom:8px;">Dashboard is empty</div>
+            <div style="font-size:13px;margin-bottom:16px;">Click "Add Item" to add your first chart or KPI tile.</div>
+          </div>
+        </t>
+      </div>
+
+    </t><!-- end t-elif dashboard -->
+
+    <!-- ── AI Panel ─────────────────────────────────────────────────────── -->
+    <div class="hb-ai-panel" t-att-class="{'open': state.aiPanelOpen}">
+      <div class="hb-ai-header">
+        <h3><i class="fa fa-magic" style="margin-right:8px"/> AI Assistant</h3>
+        <button t-on-click="closeAiPanel">×</button>
+      </div>
+      <div class="hb-ai-body">
+        <!-- Explain result (from item click) -->
+        <t t-if="state.aiExplainText">
+          <div style="font-weight:600;margin-bottom:6px;font-size:13px;color:var(--hb-text)">
+            Chart Explanation: <t t-esc="state.aiExplainItem and state.aiExplainItem.name"/>
+          </div>
+          <div class="hb-ai-response" t-esc="state.aiExplainText"/>
+          <button class="hb-btn hb-btn-outline" style="margin-top:10px;width:100%"
+                  t-on-click="() => { state.aiExplainText = ''; state.aiExplainItem = null; }">
+            Clear
+          </button>
+          <hr style="border:none;border-top:1px solid var(--hb-border);margin:16px 0"/>
+        </t>
+
+        <!-- Generate new items -->
+        <div style="font-weight:700;font-size:13px;color:var(--hb-text);margin-bottom:4px">Generate Items from Model</div>
+        <div style="font-size:12px;color:var(--hb-text-muted);margin-bottom:12px">
+          Select a model and describe what you want. AI will create dashboard items automatically.
+        </div>
+
+        <label>Odoo Model</label>
+        <select t-on-change="onAiModelChange">
+          <option value="">— Select Model —</option>
+          <option value="sale.order">sale.order — Sales Orders</option>
+          <option value="crm.lead">crm.lead — CRM Leads</option>
+          <option value="account.move">account.move — Journal Entries</option>
+          <option value="stock.picking">stock.picking — Stock Transfers</option>
+          <option value="hr.employee">hr.employee — Employees</option>
+          <option value="hr.applicant">hr.applicant — Recruitment</option>
+          <option value="purchase.order">purchase.order — Purchase Orders</option>
+          <option value="project.task">project.task — Project Tasks</option>
+          <option value="res.partner">res.partner — Contacts</option>
+          <option value="product.product">product.product — Products</option>
+          <option value="helpdesk.ticket">helpdesk.ticket — Helpdesk Tickets</option>
+        </select>
+
+        <label>Intent (optional)</label>
+        <textarea placeholder="e.g. Show revenue trends, top customers, and conversion rates"
+                  t-on-input="onAiIntentChange"/>
+
+        <t t-if="state.aiResponse">
+          <div class="hb-ai-response" t-esc="state.aiResponse"/>
+        </t>
+
+        <t t-if="state.configAiProvider === 'disabled'">
+          <div style="margin-top:12px;padding:10px;background:#fff3cd;border-radius:6px;font-size:12px;color:#856404;">
+            <i class="fa fa-warning"/> AI is not configured.
+            Go to <b>Configuration → Settings</b> to add an API key.
+          </div>
+        </t>
+      </div>
+
+      <div class="hb-ai-footer">
+        <button class="hb-btn hb-btn-primary" style="flex:1"
+                t-att-disabled="state.aiLoading or !state.aiModel"
+                t-on-click="aiGenerate">
+          <t t-if="state.aiLoading"><i class="fa fa-spinner fa-spin"/> Generating…</t>
+          <t t-else=""><i class="fa fa-magic"/> Generate Items</t>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Dashboard Settings Modal ─────────────────────────────────────── -->
+    <t t-if="state.showDashboardDialog">
+      <div class="hb-modal-overlay" t-on-click.self="hideDashboardDialog">
+        <div class="hb-modal">
+          <div class="hb-modal-header">
+            <h3><i class="fa fa-cog" style="color:#667eea;margin-right:8px"/> Dashboard Settings</h3>
+            <button t-on-click="hideDashboardDialog">×</button>
+          </div>
+          <div class="hb-modal-body">
+            <div class="hb-form-row">
+              <div class="hb-form-group">
+                <label>Dashboard Name</label>
+                <input type="text" t-att-value="state.dashForm.name"
+                       t-on-input="(ev) => this.onDashFormChange('name', ev)"/>
+              </div>
+              <div class="hb-form-group">
+                <label>Theme</label>
+                <select t-on-change="(ev) => this.onDashFormChange('theme', ev)">
+                  <option value="light" t-att-selected="state.dashForm.theme === 'light'">Light</option>
+                  <option value="dark"  t-att-selected="state.dashForm.theme === 'dark'">Dark</option>
+                </select>
+              </div>
+            </div>
+            <div class="hb-form-row three">
+              <div class="hb-form-group">
+                <label>Primary Color</label>
+                <input type="color" t-att-value="state.dashForm.primary_color"
+                       t-on-input="(ev) => this.onDashFormChange('primary_color', ev)"/>
+              </div>
+              <div class="hb-form-group">
+                <label>Background Color</label>
+                <input type="color" t-att-value="state.dashForm.background_color"
+                       t-on-input="(ev) => this.onDashFormChange('background_color', ev)"/>
+              </div>
+              <div class="hb-form-group">
+                <label>Card Color</label>
+                <input type="color" t-att-value="state.dashForm.card_color"
+                       t-on-input="(ev) => this.onDashFormChange('card_color', ev)"/>
+              </div>
+            </div>
+            <div class="hb-form-row">
+              <div class="hb-form-group">
+                <label>Default Date Filter</label>
+                <select t-on-change="(ev) => this.onDashFormChange('default_date_filter', ev)">
+                  <t t-foreach="dateFilterOptions" t-as="opt" t-key="opt.value">
+                    <option t-att-value="opt.value" t-att-selected="state.dashForm.default_date_filter === opt.value">
+                      <t t-esc="opt.label"/>
+                    </option>
+                  </t>
+                </select>
+              </div>
+              <div class="hb-form-group">
+                <label>Icon (Font Awesome class)</label>
+                <input type="text" placeholder="fa-tachometer" t-att-value="state.dashForm.icon"
+                       t-on-input="(ev) => this.onDashFormChange('icon', ev)"/>
+              </div>
+            </div>
+            <div class="hb-form-row">
+              <div class="hb-form-group">
+                <label>
+                  <input type="checkbox" t-att-checked="state.dashForm.auto_refresh"
+                         t-on-change="(ev) => this.onDashFormChange('auto_refresh', ev)"/>
+                  Auto Refresh
+                </label>
+              </div>
+              <div class="hb-form-group">
+                <label>Refresh Interval (seconds)</label>
+                <input type="number" min="30" max="86400" t-att-value="state.dashForm.refresh_interval"
+                       t-on-input="(ev) => this.onDashFormChange('refresh_interval', ev)"/>
+              </div>
+            </div>
+            <div class="hb-form-group">
+              <label>Description</label>
+              <input type="text" t-att-value="state.dashForm.description"
+                     t-on-input="(ev) => this.onDashFormChange('description', ev)"/>
+            </div>
+            <div class="hb-form-group">
+              <label>
+                <input type="checkbox" t-att-checked="state.dashForm.is_public"
+                       t-on-change="(ev) => this.onDashFormChange('is_public', ev)"/>
+                Public (accessible by all users)
+              </label>
+            </div>
+          </div>
+          <div class="hb-modal-footer">
+            <button class="hb-btn hb-btn-outline" t-on-click="hideDashboardDialog">Cancel</button>
+            <button class="hb-btn hb-btn-primary" t-on-click="saveDashboard">
+              <i class="fa fa-check"/> Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </t>
+
+    <!-- ── Item Config Dialog ──────────────────────────────────────────── -->
+    <t t-call="hirebeans_dashboard_suite.ItemDialog"/>
+
+  </div><!-- hb-dashboard-root -->
+</t>
+
+</templates>
+

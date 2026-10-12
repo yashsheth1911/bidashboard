@@ -1,0 +1,811 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<!-- ─── Item Configuration Dialog ────────────────────────────────────────── -->
+<!-- This template is rendered conditionally inside DashboardBuilder when
+     state.showItemDialog is true. It uses state.itemForm and methods
+     from the HbDashboardBuilder component. -->
+
+<t t-name="hirebeans_dashboard_suite.ItemDialog">
+  <t t-if="state.showItemDialog">
+    <div class="hb-modal-overlay" t-on-click.self="hideItemDialog">
+      <div class="hb-modal hb-modal-lg">
+        <div class="hb-modal-header">
+          <h3>
+            <i class="fa fa-bar-chart" style="color:#667eea;margin-right:8px"/>
+            <t t-esc="state.editItem ? 'Edit: ' + state.itemForm.name : 'Add New Item'"/>
+          </h3>
+          <button t-on-click="hideItemDialog">×</button>
+        </div>
+
+        <div class="hb-modal-body">
+
+          <!-- ── STEP 1: Chart Type ─────────────────────────────────── -->
+          <div style="margin-bottom:18px">
+            <div style="font-weight:700;font-size:12px;color:var(--hb-text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">
+              Chart Type
+            </div>
+            <div class="hb-chart-type-grid">
+              <t t-foreach="CHART_TYPES" t-as="ct" t-key="ct.type">
+                <div class="hb-chart-type-btn"
+                     t-att-class="{'active': state.itemForm.item_type === ct.type}"
+                     t-on-click="() => this.selectChartType(ct.type)">
+                  <i t-att-class="'fa ' + ct.icon"/>
+                  <span t-esc="ct.label"/>
+                </div>
+              </t>
+            </div>
+          </div>
+
+          <!-- ── STEP 2: Basic ─────────────────────────────────────── -->
+          <div class="hb-form-row">
+            <div class="hb-form-group">
+              <label>Item Title *</label>
+              <input type="text" t-att-value="state.itemForm.name"
+                     t-on-input="(ev) => this.onItemFormChange('name', ev)"/>
+            </div>
+            <div class="hb-form-group">
+              <label>Custom Title Override</label>
+              <input type="text" placeholder="Leave blank to use title"
+                     t-att-value="state.itemForm.custom_title"
+                     t-on-input="(ev) => this.onItemFormChange('custom_title', ev)"/>
+            </div>
+          </div>
+
+          <!-- ── STEP 3: Data Source ───────────────────────────────── -->
+          <div style="font-weight:700;font-size:12px;color:var(--hb-text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;margin-top:16px">
+            Data Source
+          </div>
+          <div class="hb-form-row">
+            <div class="hb-form-group">
+              <label>Odoo Model</label>
+
+              <!--
+                Searchable model selector.
+                State:   state.modelSel.{open, query, total, highlighted}
+                Methods: openModelSel, closeModelSel, onModelSearch,
+                         onModelSelKeydown, selectModel, getSelectedModelLabel
+              -->
+              <div class="hb-model-sel"
+                   t-att-class="{'hb-model-sel-active': state.modelSel.open}">
+
+                <!-- ── Trigger button ── -->
+                <div class="hb-model-sel-trigger"
+                     role="combobox"
+                     aria-haspopup="listbox"
+                     t-att-aria-expanded="state.modelSel.open ? 'true' : 'false'"
+                     t-on-click="openModelSel">
+                  <t t-if="state.itemForm.model_name">
+                    <div class="hb-model-sel-value">
+                      <span class="hb-model-sel-val-name"
+                            t-esc="getSelectedModelLabel() || state.itemForm.model_name"/>
+                      <span t-if="getSelectedModelLabel()"
+                            class="hb-model-sel-val-tech"
+                            t-esc="state.itemForm.model_name"/>
+                    </div>
+                  </t>
+                  <span t-else="" class="hb-model-sel-placeholder">— Select Model —</span>
+                  <i t-att-class="state.modelSel.open ? 'fa fa-chevron-up' : 'fa fa-chevron-down'"
+                     class="hb-model-sel-caret"/>
+                </div>
+
+                <!-- ── Inline panel (opens below trigger) ── -->
+                <t t-if="state.modelSel.open">
+                  <div class="hb-model-sel-panel" role="listbox" aria-label="Models">
+
+                    <!-- Search bar -->
+                    <div class="hb-model-sel-search">
+                      <i class="fa fa-search"/>
+                      <input class="hb-model-sel-input"
+                             type="text"
+                             placeholder="Search by name, technical name, or module…"
+                             autocomplete="off"
+                             spellcheck="false"
+                             t-on-input="onModelSearch"
+                             t-on-keydown="onModelSelKeydown"/>
+                      <i t-if="state.modelsLoading"
+                         class="fa fa-spinner fa-spin"
+                         style="color:var(--hb-primary);flex-shrink:0"/>
+                      <button t-if="state.modelSel.query"
+                              class="hb-model-sel-clear"
+                              type="button"
+                              title="Clear search"
+                              t-on-click="clearModelSearch">
+                        <i class="fa fa-times"/>
+                      </button>
+                    </div>
+
+                    <!-- Result list -->
+                    <div class="hb-model-sel-list">
+                      <!-- Empty state -->
+                      <t t-if="!state.modelsLoading and state.models.length === 0">
+                        <div class="hb-model-sel-empty">
+                          <i class="fa fa-search-minus"/>
+                          <span>No models match
+                            <t t-if="state.modelSel.query">
+                              &quot;<t t-esc="state.modelSel.query"/>&quot;
+                            </t>
+                          </span>
+                        </div>
+                      </t>
+
+                      <!-- Model rows -->
+                      <t t-foreach="state.models" t-as="m" t-key="m.id">
+                        <div class="hb-model-sel-item"
+                             role="option"
+                             t-att-aria-selected="state.itemForm.model_name === m.model ? 'true' : 'false'"
+                             t-att-class="{
+                               'hb-model-sel-item-active':      state.itemForm.model_name === m.model,
+                               'hb-model-sel-item-highlighted': state.modelSel.highlighted === m_index
+                             }"
+                             t-on-click="() => this.selectModel(m)"
+                             t-on-mouseenter="() => { this.state.modelSel.highlighted = m_index; }">
+                          <span class="hb-model-sel-item-name"
+                                t-out="_hl(m.name, state.modelSel.query)"/>
+                          <span class="hb-model-sel-item-tech"
+                                t-out="_hl(m.model, state.modelSel.query)"/>
+                          <span t-if="m.modules" class="hb-model-sel-item-mod"
+                                t-out="_hl(m.modules, state.modelSel.query)"/>
+                        </div>
+                      </t>
+                    </div>
+
+                    <!-- Footer: result count + load more -->
+                    <div class="hb-model-sel-footer">
+                      <t t-if="state.modelsLoading">Searching…</t>
+                      <t t-elif="state.modelSel.total > state.models.length">
+                        <button class="hb-model-sel-load-more"
+                                type="button"
+                                t-on-click="loadMoreModels">
+                          <i class="fa fa-chevron-down"/> Load More
+                        </button>
+                        <span>
+                          Showing <strong t-esc="state.models.length"/> of
+                          <strong t-esc="state.modelSel.total"/>
+                        </span>
+                      </t>
+                      <t t-elif="state.models.length > 0">
+                        <strong t-esc="state.models.length"/>
+                        model<t t-if="state.models.length !== 1">s</t>
+                      </t>
+                    </div>
+
+                  </div><!-- /panel -->
+                </t><!-- /t-if open -->
+
+              </div><!-- /hb-model-sel -->
+            </div>
+            <div class="hb-form-group">
+              <label>Date Field</label>
+              <select t-on-change="(ev) => this.onItemFormChange('date_field', ev)">
+                <option value="create_date" t-att-selected="state.itemForm.date_field === 'create_date'">create_date (Created On)</option>
+                <option value="write_date" t-att-selected="state.itemForm.date_field === 'write_date'">write_date (Updated On)</option>
+                <t t-if="state.fields.length">
+                  <t t-foreach="state.fields.filter(f => ['date','datetime'].includes(f.type))" t-as="f" t-key="f.name">
+                    <option t-att-value="f.name" t-att-selected="state.itemForm.date_field === f.name">
+                      <t t-esc="f.string"/> (<t t-esc="f.name"/>)
+                    </option>
+                  </t>
+                </t>
+              </select>
+            </div>
+          </div>
+
+          <div class="hb-form-row">
+            <div class="hb-form-group">
+              <label>Group By / X-Axis Field</label>
+              <t t-if="state.fieldsLoading">
+                <div style="padding:8px;color:var(--hb-text-muted);font-size:13px">Loading fields…</div>
+              </t>
+              <t t-else="">
+                <select t-on-change="(ev) => this.onItemFormChange('x_field', ev)">
+                  <option value="">— None / Count only —</option>
+                  <t t-foreach="state.fields" t-as="f" t-key="f.name">
+                    <option t-att-value="f.name" t-att-selected="state.itemForm.x_field === f.name">
+                      <t t-esc="f.string"/> (<t t-esc="f.name"/>) [<t t-esc="f.type"/>]
+                    </option>
+                  </t>
+                </select>
+              </t>
+            </div>
+            <div class="hb-form-group">
+              <label>Measure / Y-Axis Field</label>
+              <select t-on-change="(ev) => this.onItemFormChange('y_field', ev)">
+                <option value="">— Count Records —</option>
+                <t t-foreach="state.fields.filter(f => ['integer','float','monetary'].includes(f.type))" t-as="f" t-key="f.name">
+                  <option t-att-value="f.name" t-att-selected="state.itemForm.y_field === f.name">
+                    <t t-esc="f.string"/> (<t t-esc="f.name"/>)
+                  </option>
+                </t>
+              </select>
+            </div>
+          </div>
+
+          <div class="hb-form-row three">
+            <div class="hb-form-group">
+              <label>Aggregate</label>
+              <select t-on-change="(ev) => this.onItemFormChange('aggregate', ev)">
+                <option value="count"   t-att-selected="state.itemForm.aggregate === 'count'">Count</option>
+                <option value="sum"     t-att-selected="state.itemForm.aggregate === 'sum'">Sum</option>
+                <option value="avg"     t-att-selected="state.itemForm.aggregate === 'avg'">Average</option>
+                <option value="min"     t-att-selected="state.itemForm.aggregate === 'min'">Minimum</option>
+                <option value="max"     t-att-selected="state.itemForm.aggregate === 'max'">Maximum</option>
+              </select>
+            </div>
+            <div class="hb-form-group">
+              <label>Date Filter</label>
+              <select t-on-change="(ev) => this.onItemFormChange('date_filter', ev)">
+                <t t-foreach="dateFilterOptions" t-as="opt" t-key="opt.value">
+                  <option t-att-value="opt.value" t-att-selected="state.itemForm.date_filter === opt.value">
+                    <t t-esc="opt.label"/>
+                  </option>
+                </t>
+              </select>
+            </div>
+            <div class="hb-form-group">
+              <label>Record Limit</label>
+              <input type="number" min="1" max="500" t-att-value="state.itemForm.limit"
+                     t-on-input="(ev) => this.onItemFormChange('limit', ev)"/>
+            </div>
+          </div>
+
+          <div class="hb-form-row">
+            <div class="hb-form-group hb-domain-builder">
+              <label>
+                Domain Filter
+                <button class="hb-db-adv-toggle" type="button" t-on-click="toggleDomainAdvanced">
+                  <i t-att-class="state.domainBuilder.advanced ? 'fa fa-eye' : 'fa fa-code'"/>
+                  <t t-esc="state.domainBuilder.advanced ? ' Visual Builder' : ' Advanced'"/>
+                </button>
+              </label>
+
+              <!-- ── Visual rule builder ─────────────────────────────── -->
+              <t t-if="!state.domainBuilder.advanced">
+
+                <t t-if="!state.fields.length">
+                  <div class="hb-db-no-model">
+                    <i class="fa fa-info-circle"/> Select a model above to build a filter
+                  </div>
+                </t>
+
+                <t t-else="">
+                  <!-- Match mode header -->
+                  <div class="hb-db-header">
+                    Match
+                    <button class="hb-db-mode-btn" type="button" t-on-click="toggleDomainMode"
+                            t-att-title="state.domainBuilder.matchMode === 'ALL' ? 'Click to switch to ANY (OR)' : 'Click to switch to ALL (AND)'">
+                      <t t-esc="state.domainBuilder.matchMode"/>
+                      <i class="fa fa-exchange" style="margin-left:3px;font-size:9px;opacity:.7"/>
+                    </button>
+                    of the following rules:
+                  </div>
+
+                  <!-- Rule rows -->
+                  <div class="hb-db-rules">
+                    <t t-if="state.domainBuilder.rules.length === 0">
+                      <div class="hb-db-empty">
+                        <i class="fa fa-filter"/> No rules — all records are included
+                      </div>
+                    </t>
+
+                    <t t-foreach="state.domainBuilder.rules" t-as="rule" t-key="rule_index">
+                      <div class="hb-db-rule">
+
+                        <!-- Field -->
+                        <select class="hb-db-field"
+                                t-on-change="(ev) => this.onDomainField(rule_index, ev)">
+                          <option value="">— field —</option>
+                          <t t-foreach="state.fields" t-as="f" t-key="f.name">
+                            <option t-att-value="f.name"
+                                    t-att-selected="rule.field === f.name">
+                              <t t-esc="f.string"/> (<t t-esc="f.name"/>)
+                            </option>
+                          </t>
+                        </select>
+
+                        <!-- Operator -->
+                        <select class="hb-db-op"
+                                t-on-change="(ev) => this.onDomainOp(rule_index, ev)">
+                          <t t-foreach="this._getDomainOperators(rule.fieldType)" t-as="op" t-key="op.v">
+                            <option t-att-value="op.v"
+                                    t-att-selected="rule.operator === op.v">
+                              <t t-esc="op.l"/>
+                            </option>
+                          </t>
+                        </select>
+
+                        <!-- Value — adapted to field type -->
+
+                        <!-- Boolean: True / False select -->
+                        <t t-if="rule.fieldType === 'boolean'">
+                          <select class="hb-db-val"
+                                  t-on-change="(ev) => this.onDomainValue(rule_index, ev)">
+                            <option value="true"
+                                    t-att-selected="rule.value === 'true' or rule.value === true">True</option>
+                            <option value="false"
+                                    t-att-selected="rule.value !== 'true' and rule.value !== true">False</option>
+                          </select>
+                        </t>
+
+                        <!-- Selection: dropdown with all declared options -->
+                        <t t-elif="rule.fieldType === 'selection'">
+                          <select class="hb-db-val"
+                                  t-on-change="(ev) => this.onDomainValue(rule_index, ev)">
+                            <option value="">— select —</option>
+                            <t t-foreach="rule.selectionOptions or []" t-as="opt" t-key="opt[0]">
+                              <option t-att-value="opt[0]"
+                                      t-att-selected="rule.value === opt[0]">
+                                <t t-esc="opt[1]"/>
+                              </option>
+                            </t>
+                          </select>
+                        </t>
+
+                        <!-- Many2one: searchable typeahead widget -->
+                        <t t-elif="rule.fieldType === 'many2one' and !['in','not in'].includes(rule.operator)">
+                          <div class="hb-db-m2o-wrap">
+                            <t t-if="rule.m2oOpen">
+                              <input class="hb-db-val hb-db-m2o-input" type="text"
+                                     t-att-data-m2o-idx="rule_index"
+                                     placeholder="Type to search…"
+                                     autocomplete="off" spellcheck="false"
+                                     t-on-input="(ev) => this.onM2oSearch(rule_index, ev)"
+                                     t-on-blur="() => this.onM2oBlur(rule_index)"/>
+                              <ul class="hb-db-m2o-drop">
+                                <li t-if="rule.m2oLoading" class="hb-db-m2o-spin">
+                                  <i class="fa fa-spinner fa-spin"/> Searching…
+                                </li>
+                                <t t-elif="!(rule.m2oOptions or []).length">
+                                  <li class="hb-db-m2o-empty">No results</li>
+                                </t>
+                                <t t-else="">
+                                  <t t-foreach="rule.m2oOptions or []" t-as="opt" t-key="opt.id">
+                                    <li t-att-class="('' + rule.value) === ('' + opt.id) ? 'hb-db-m2o-opt hb-db-m2o-sel' : 'hb-db-m2o-opt'"
+                                        t-on-mousedown="(ev) => { ev.preventDefault(); this.onM2oSelect(rule_index, opt.id, opt.name); }">
+                                      <t t-esc="opt.name"/>
+                                    </li>
+                                  </t>
+                                  <li t-if="rule.m2oTotal and rule.m2oTotal > (rule.m2oOptions or []).length"
+                                      class="hb-db-m2o-hint">
+                                    +<t t-esc="rule.m2oTotal - rule.m2oOptions.length"/> more — type to narrow
+                                  </li>
+                                </t>
+                              </ul>
+                            </t>
+                            <t t-else="">
+                              <div class="hb-db-m2o-display"
+                                   t-on-click="() => this.onM2oFocus(rule_index)">
+                                <span t-if="rule.m2oDisplay" class="hb-db-m2o-name">
+                                  <t t-esc="rule.m2oDisplay"/>
+                                </span>
+                                <span t-else="" class="hb-db-m2o-ph">— select —</span>
+                                <span class="hb-db-m2o-actions">
+                                  <i t-if="rule.m2oDisplay"
+                                     class="fa fa-times hb-db-m2o-clr"
+                                     t-on-click.stop="() => this.onM2oClear(rule_index)"
+                                     title="Clear"/>
+                                  <i class="fa fa-search hb-db-m2o-ico"/>
+                                </span>
+                              </div>
+                            </t>
+                          </div>
+                        </t>
+
+                        <!-- Date -->
+                        <t t-elif="rule.fieldType === 'date'">
+                          <input class="hb-db-val" type="date"
+                                 t-att-data-rule-idx="rule_index"
+                                 t-att-value="rule.value"
+                                 t-on-blur="(ev) => this.onDomainValue(rule_index, ev)"/>
+                        </t>
+
+                        <!-- Datetime -->
+                        <t t-elif="rule.fieldType === 'datetime'">
+                          <input class="hb-db-val" type="datetime-local"
+                                 t-att-data-rule-idx="rule_index"
+                                 t-att-value="rule.value"
+                                 t-on-blur="(ev) => this.onDomainValue(rule_index, ev)"/>
+                        </t>
+
+                        <!-- Numeric (not in/not in) -->
+                        <t t-elif="['integer','float','monetary'].includes(rule.fieldType) and !['in','not in'].includes(rule.operator)">
+                          <input class="hb-db-val" type="number"
+                                 t-att-data-rule-idx="rule_index"
+                                 t-att-value="rule.value"
+                                 t-on-blur="(ev) => this.onDomainValue(rule_index, ev)"/>
+                        </t>
+
+                        <!-- Default: text (also handles in/not in for all types) -->
+                        <t t-else="">
+                          <input class="hb-db-val" type="text"
+                                 t-att-data-rule-idx="rule_index"
+                                 t-att-value="rule.value"
+                                 t-att-placeholder="['in','not in'].includes(rule.operator) ? 'val1, val2, …' : 'value'"
+                                 t-on-blur="(ev) => this.onDomainValue(rule_index, ev)"/>
+                        </t>
+
+                        <!-- Remove rule -->
+                        <button class="hb-db-remove" type="button" title="Remove rule"
+                                t-on-click="() => this.removeDomainRule(rule_index)">
+                          <i class="fa fa-times"/>
+                        </button>
+
+                      </div><!-- /rule -->
+                    </t>
+                  </div><!-- /rules -->
+
+                  <button class="hb-db-add" type="button" t-on-click="addDomainRule">
+                    <i class="fa fa-plus"/> New Rule
+                  </button>
+                </t>
+
+              </t><!-- /visual -->
+
+              <!-- ── Advanced / raw textarea ─────────────────────────── -->
+              <t t-else="">
+                <textarea class="hb-db-textarea"
+                          t-att-value="state.itemForm.domain"
+                          placeholder='[["state","=","sale"],["move_type","=","out_invoice"]]'
+                          t-on-input="(ev) => this.onItemFormChange('domain', ev)"/>
+              </t>
+
+            </div>
+            <div class="hb-form-group">
+              <label>Second Group By (optional)</label>
+              <select t-on-change="(ev) => this.onItemFormChange('second_groupby', ev)">
+                <option value="">— None —</option>
+                <t t-foreach="state.fields" t-as="f" t-key="f.name">
+                  <option t-att-value="f.name" t-att-selected="state.itemForm.second_groupby === f.name">
+                    <t t-esc="f.string"/> (<t t-esc="f.name"/>)
+                  </option>
+                </t>
+              </select>
+            </div>
+          </div>
+
+          <!-- ── STEP 4: KPI Tile Options ──────────────────────────── -->
+          <t t-if="state.itemForm.item_type === 'tile'">
+            <div style="font-weight:700;font-size:12px;color:var(--hb-text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;margin-top:16px">
+              KPI Tile Options
+            </div>
+            <div class="hb-form-row">
+              <div class="hb-form-group">
+                <label>KPI Format</label>
+                <select t-on-change="(ev) => this.onItemFormChange('kpi_format', ev)">
+                  <option value="number"     t-att-selected="state.itemForm.kpi_format === 'number'">Number</option>
+                  <option value="currency"   t-att-selected="state.itemForm.kpi_format === 'currency'">Currency</option>
+                  <option value="percentage" t-att-selected="state.itemForm.kpi_format === 'percentage'">Percentage</option>
+                  <option value="duration"   t-att-selected="state.itemForm.kpi_format === 'duration'">Duration</option>
+                </select>
+              </div>
+              <div class="hb-form-group">
+                <label>Compare With</label>
+                <select t-on-change="(ev) => this.onItemFormChange('compare_period', ev)">
+                  <option value="none"      t-att-selected="state.itemForm.compare_period === 'none'">None</option>
+                  <option value="previous"  t-att-selected="state.itemForm.compare_period === 'previous'">Previous Period</option>
+                  <option value="last_year" t-att-selected="state.itemForm.compare_period === 'last_year'">Same Period Last Year</option>
+                </select>
+              </div>
+            </div>
+            <div class="hb-form-row">
+              <div class="hb-form-group">
+                <label>Prefix</label>
+                <input type="text" placeholder="e.g. $" t-att-value="state.itemForm.kpi_prefix"
+                       t-on-input="(ev) => this.onItemFormChange('kpi_prefix', ev)"/>
+              </div>
+              <div class="hb-form-group">
+                <label>Suffix</label>
+                <input type="text" placeholder="e.g. units" t-att-value="state.itemForm.kpi_suffix"
+                       t-on-input="(ev) => this.onItemFormChange('kpi_suffix', ev)"/>
+              </div>
+            </div>
+            <div class="hb-form-group">
+              <label>Card Color</label>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <t t-foreach="KPI_COLORS" t-as="col" t-key="col">
+                  <div t-att-class="'hb-chart-type-btn ' + (state.itemForm.kpi_color === col ? 'active' : '')"
+                       t-on-click="() => this.selectKpiColor(col)"
+                       style="min-width:64px">
+                    <t t-esc="col"/>
+                  </div>
+                </t>
+              </div>
+            </div>
+            <div class="hb-form-group">
+              <label>Icon (Font Awesome)</label>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <t t-foreach="KPI_ICONS" t-as="icon" t-key="icon">
+                  <div t-att-class="'hb-chart-type-btn ' + (state.itemForm.kpi_icon === icon ? 'active' : '')"
+                       t-on-click="() => this.selectKpiIcon(icon)"
+                       style="min-width:42px">
+                    <i t-att-class="'fa ' + icon"/>
+                  </div>
+                </t>
+              </div>
+            </div>
+          </t>
+
+          <!-- ── Top Border Color (all card types) ─────────────────── -->
+          <div class="hb-form-group">
+            <label>Top Border Color</label>
+            <div style="display:flex;gap:10px;align-items:center">
+              <input type="color"
+                     t-att-value="state.itemForm.top_border_color || '#667eea'"
+                     t-on-input="(ev) => this.onItemFormChange('top_border_color', ev)"/>
+              <button type="button"
+                      style="padding:3px 10px;font-size:11px;border:1px solid var(--hb-border);border-radius:4px;background:var(--hb-card-bg);cursor:pointer;color:var(--hb-text-muted)"
+                      t-on-click="() => { this.state.itemForm.top_border_color = ''; }">
+                <i class="fa fa-times"/> None
+              </button>
+              <span style="font-size:11px;color:var(--hb-text-muted)">
+                <t t-if="state.itemForm.top_border_color">Colored bar on top edge</t>
+                <t t-else="">No border — pick a color to enable</t>
+              </span>
+            </div>
+          </div>
+
+          <!-- ── List Columns (List View chart type) ──────────────── -->
+          <t t-if="state.itemForm.item_type === 'list'">
+            <div style="font-weight:700;font-size:12px;color:var(--hb-text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;margin-top:16px">
+              List Columns
+            </div>
+            <t t-if="!state.fields.length">
+              <div class="hb-db-no-model">
+                <i class="fa fa-info-circle"/> Select a model above to choose columns
+              </div>
+            </t>
+            <t t-else="">
+              <div class="hb-model-sel hb-list-field-sel"
+                   t-att-class="{'hb-model-sel-active': state.listFieldSel.open}">
+                <div class="hb-model-sel-trigger"
+                     role="combobox"
+                     aria-haspopup="listbox"
+                     t-att-aria-expanded="state.listFieldSel.open ? 'true' : 'false'"
+                     t-on-click="openListFieldSel">
+                  <span class="hb-model-sel-placeholder">
+                    <i class="fa fa-plus"/> Add a column…
+                  </span>
+                  <i t-att-class="state.listFieldSel.open ? 'fa fa-chevron-up' : 'fa fa-chevron-down'"
+                     class="hb-model-sel-caret"/>
+                </div>
+
+                <t t-if="state.listFieldSel.open">
+                  <div class="hb-model-sel-panel" role="listbox" aria-label="Fields">
+                    <div class="hb-model-sel-search">
+                      <i class="fa fa-search"/>
+                      <input class="hb-model-sel-input hb-list-field-sel-input"
+                             type="text"
+                             placeholder="Search fields…"
+                             autocomplete="off"
+                             spellcheck="false"
+                             t-on-input="onListFieldSearch"/>
+                      <button t-if="state.listFieldSel.query"
+                              class="hb-model-sel-clear"
+                              type="button"
+                              title="Clear search"
+                              t-on-click="clearListFieldSearch">
+                        <i class="fa fa-times"/>
+                      </button>
+                    </div>
+
+                    <div class="hb-model-sel-list">
+                      <t t-if="!listFieldSelResults().length">
+                        <div class="hb-model-sel-empty">
+                          <i class="fa fa-search-minus"/>
+                          <span>No matching fields</span>
+                        </div>
+                      </t>
+                      <t t-foreach="listFieldSelResults()" t-as="f" t-key="f.name">
+                        <div class="hb-model-sel-item"
+                             role="option"
+                             t-on-click="() =&gt; this.selectListField(f.name)">
+                          <span class="hb-model-sel-item-name" t-esc="f.string"/>
+                          <span class="hb-model-sel-item-tech" t-esc="f.name"/>
+                        </div>
+                      </t>
+                    </div>
+                  </div>
+                </t>
+              </div>
+
+              <div style="font-size:11px;color:var(--hb-text-muted);margin:10px 0 6px">
+                Selected columns (display order)
+              </div>
+              <t t-if="!listColumnsArray().length">
+                <div class="hb-db-empty">
+                  <i class="fa fa-columns"/> No columns selected yet — click fields above to add them
+                </div>
+              </t>
+              <div class="hb-list-col-selected">
+                <t t-foreach="listColumnsArray()" t-as="col" t-key="col">
+                  <div class="hb-list-col-row">
+                    <span class="hb-list-col-name" t-esc="_fieldLabel(col)"/>
+                    <span class="hb-list-col-actions">
+                      <button type="button" title="Move up" t-att-disabled="col_index === 0"
+                              t-on-click="() =&gt; this.moveListColumn(col_index, -1)">
+                        <i class="fa fa-chevron-up"/>
+                      </button>
+                      <button type="button" title="Move down" t-att-disabled="col_index === (listColumnsArray().length - 1)"
+                              t-on-click="() =&gt; this.moveListColumn(col_index, 1)">
+                        <i class="fa fa-chevron-down"/>
+                      </button>
+                      <button type="button" title="Remove" t-on-click="() =&gt; this.toggleListColumn(col)">
+                        <i class="fa fa-times"/>
+                      </button>
+                    </span>
+                  </div>
+                </t>
+              </div>
+
+              <div class="hb-form-row" style="margin-top:12px">
+                <div class="hb-form-group">
+                  <label>Sort By</label>
+                  <select t-on-change="(ev) =&gt; this.onItemFormChange('sort_by', ev)">
+                    <option value="">— Default —</option>
+                    <t t-foreach="state.fields" t-as="f" t-key="f.name">
+                      <option t-att-value="f.name" t-att-selected="state.itemForm.sort_by === f.name">
+                        <t t-esc="f.string"/>
+                      </option>
+                    </t>
+                  </select>
+                </div>
+                <div class="hb-form-group">
+                  <label>Sort Order</label>
+                  <select t-on-change="(ev) =&gt; this.onItemFormChange('sort_order', ev)">
+                    <option value="asc" t-att-selected="state.itemForm.sort_order === 'asc'">Ascending</option>
+                    <option value="desc" t-att-selected="state.itemForm.sort_order === 'desc'">Descending</option>
+                  </select>
+                </div>
+              </div>
+            </t>
+          </t>
+
+          <!-- ── STEP 5: Chart Appearance ──────────────────────────── -->
+          <t t-if="!['tile', 'list'].includes(state.itemForm.item_type)">
+            <div style="font-weight:700;font-size:12px;color:var(--hb-text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;margin-top:16px">
+              Chart Appearance
+            </div>
+            <div class="hb-form-row">
+              <div class="hb-form-group">
+                <label>Base Color</label>
+                <input type="color" t-att-value="state.itemForm.chart_color"
+                       t-on-input="(ev) => this.onItemFormChange('chart_color', ev)"/>
+              </div>
+              <div class="hb-form-group">
+                <label>Color Scheme</label>
+                <select t-on-change="(ev) => this.onItemFormChange('color_scheme', ev)">
+                  <option value="default"        t-att-selected="state.itemForm.color_scheme === 'default'">Default</option>
+                  <option value="vintage"        t-att-selected="state.itemForm.color_scheme === 'vintage'">Vintage</option>
+                  <option value="dark"           t-att-selected="state.itemForm.color_scheme === 'dark'">Dark</option>
+                  <option value="westeros"       t-att-selected="state.itemForm.color_scheme === 'westeros'">Westeros</option>
+                  <option value="essos"          t-att-selected="state.itemForm.color_scheme === 'essos'">Essos</option>
+                  <option value="wonderland"     t-att-selected="state.itemForm.color_scheme === 'wonderland'">Wonderland</option>
+                  <option value="walden"         t-att-selected="state.itemForm.color_scheme === 'walden'">Walden</option>
+                  <option value="chalk"          t-att-selected="state.itemForm.color_scheme === 'chalk'">Chalk</option>
+                  <option value="infographic"    t-att-selected="state.itemForm.color_scheme === 'infographic'">Infographic</option>
+                  <option value="macarons"       t-att-selected="state.itemForm.color_scheme === 'macarons'">Macarons</option>
+                  <option value="roma"           t-att-selected="state.itemForm.color_scheme === 'roma'">Roma</option>
+                  <option value="purple_passion" t-att-selected="state.itemForm.color_scheme === 'purple_passion'">Purple Passion</option>
+                  <option value="halloween"      t-att-selected="state.itemForm.color_scheme === 'halloween'">Halloween</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px">
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+                <input type="checkbox" t-att-checked="state.itemForm.show_legend"
+                       t-on-change="(ev) => this.onItemFormChange('show_legend', ev)"/>
+                Show Legend
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+                <input type="checkbox" t-att-checked="state.itemForm.stack_chart"
+                       t-on-change="(ev) => this.onItemFormChange('stack_chart', ev)"/>
+                Stack Chart
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+                <input type="checkbox" t-att-checked="state.itemForm.show_data_labels"
+                       t-on-change="(ev) => this.onItemFormChange('show_data_labels', ev)"/>
+                Data Labels
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+                <input type="checkbox" t-att-checked="state.itemForm.show_data_zoom"
+                       t-on-change="(ev) => this.onItemFormChange('show_data_zoom', ev)"/>
+                Data Zoom
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+                <input type="checkbox" t-att-checked="state.itemForm.show_markline"
+                       t-on-change="(ev) => this.onItemFormChange('show_markline', ev)"/>
+                Avg Markline
+              </label>
+              <label t-if="['line','area'].includes(state.itemForm.item_type)"
+                     style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+                <input type="checkbox" t-att-checked="state.itemForm.smooth_line"
+                       t-on-change="(ev) => this.onItemFormChange('smooth_line', ev)"/>
+                Smooth Line
+              </label>
+            </div>
+          </t>
+
+          <!-- ── STEP 6: Grid Position ─────────────────────────────── -->
+          <div style="font-weight:700;font-size:12px;color:var(--hb-text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;margin-top:16px">
+            Grid Position
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+            <div class="hb-form-group">
+              <label>X (column)</label>
+              <input type="number" min="0" max="11" t-att-value="state.itemForm.x"
+                     t-on-input="(ev) => this.onItemFormChange('x', ev)"/>
+            </div>
+            <div class="hb-form-group">
+              <label>Y (row)</label>
+              <input type="number" min="0" t-att-value="state.itemForm.y"
+                     t-on-input="(ev) => this.onItemFormChange('y', ev)"/>
+            </div>
+            <div class="hb-form-group">
+              <label>Width (1–12)</label>
+              <input type="number" min="1" max="12" t-att-value="state.itemForm.w"
+                     t-on-input="(ev) => this.onItemFormChange('w', ev)"/>
+            </div>
+            <div class="hb-form-group">
+              <label>Height (rows)</label>
+              <input type="number" min="2" max="20" t-att-value="state.itemForm.h"
+                     t-on-input="(ev) => this.onItemFormChange('h', ev)"/>
+            </div>
+          </div>
+
+          <!-- ── STEP 7: Click Navigation ──────────────────────────── -->
+          <div style="font-weight:700;font-size:12px;color:var(--hb-text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;margin-top:16px">
+            Click Navigation (optional)
+          </div>
+          <div class="hb-form-row">
+            <div class="hb-form-group">
+              <label>Open Model on Click</label>
+              <input type="text" placeholder="e.g. sale.order"
+                     t-att-value="state.itemForm.click_action_model"
+                     t-on-input="(ev) => this.onItemFormChange('click_action_model', ev)"/>
+            </div>
+            <div class="hb-form-group">
+              <label>View Mode</label>
+              <select t-on-change="(ev) => this.onItemFormChange('click_action_view', ev)">
+                <option value="list,form" t-att-selected="state.itemForm.click_action_view === 'list,form'">List + Form</option>
+                <option value="kanban,form" t-att-selected="state.itemForm.click_action_view === 'kanban,form'">Kanban + Form</option>
+                <option value="form" t-att-selected="state.itemForm.click_action_view === 'form'">Form Only</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- ── STEP 8: Drill-down ────────────────────────────────── -->
+          <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+              <input type="checkbox" t-att-checked="state.itemForm.is_drill_down"
+                     t-on-change="(ev) => this.onItemFormChange('is_drill_down', ev)"/>
+              Enable Drill-down
+            </label>
+            <t t-if="state.itemForm.is_drill_down">
+              <div class="hb-form-group" style="flex:1">
+                <select t-on-change="(ev) => this.onItemFormChange('drilldown_field', ev)">
+                  <option value="">— Select drilldown field —</option>
+                  <t t-foreach="state.fields" t-as="f" t-key="f.name">
+                    <option t-att-value="f.name" t-att-selected="state.itemForm.drilldown_field === f.name">
+                      <t t-esc="f.string"/>
+                    </option>
+                  </t>
+                </select>
+              </div>
+            </t>
+          </div>
+
+        </div><!-- modal body -->
+
+        <div class="hb-modal-footer">
+          <button class="hb-btn hb-btn-outline" t-on-click="hideItemDialog">Cancel</button>
+          <button class="hb-btn hb-btn-primary" t-on-click="saveItem">
+            <i class="fa fa-check"/> <t t-esc="state.editItem ? 'Update Item' : 'Add Item'"/>
+          </button>
+        </div>
+      </div><!-- modal -->
+    </div><!-- overlay -->
+  </t>
+</t>
+
+</templates>
+
