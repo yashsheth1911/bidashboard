@@ -1,5 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_hb_dashboard_user,hb.dashboard.user,model_hb_dashboard,group_hb_dashboard_user,1,1,1,0
-access_hb_dashboard_manager,hb.dashboard.manager,model_hb_dashboard,group_hb_dashboard_manager,1,1,1,1
-access_hb_dashboard_item_user,hb.dashboard.item.user,model_hb_dashboard_item,group_hb_dashboard_user,1,1,1,0
-access_hb_dashboard_item_manager,hb.dashboard.item.manager,model_hb_dashboard_item,group_hb_dashboard_manager,1,1,1,1
