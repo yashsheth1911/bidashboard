@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="res_config_settings_view_hb_dashboard" model="ir.ui.view">
+            <field name="name">res.config.settings.hb.dashboard</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//form" position="inside">
+                    <app string="BI Dashboard" name="hirebeans_dashboard_suite"
+                         logo="/hirebeans_dashboard_suite/static/src/img/hirebeans-logo.png">
+
+                        <block title="AI Configuration" name="hb_ai_settings">
+                            <setting string="AI Provider" help="AI provider for dashboard generation and chart explanations.">
+                                <field name="hb_ai_provider"/>
+                            </setting>
+                            <setting string="AI API Key" help="Your Anthropic (sk-ant-...) or OpenAI (sk-...) API key.">
+                                <field name="hb_ai_api_key" password="True" placeholder="sk-ant-... or sk-..."/>
+                            </setting>
+                            <setting string="AI Model" help="Model to use (e.g. claude-sonnet-4-6 or gpt-4o-mini).">
+                                <field name="hb_ai_model"/>
+                            </setting>
+                        </block>
+
+                        <block title="Dashboard Defaults" name="hb_dashboard_defaults">
+                            <setting string="Default Theme" help="Default theme applied to new dashboards.">
+                                <field name="hb_default_theme"/>
+                            </setting>
+                            <setting string="Max Items Per Dashboard" help="Maximum number of chart items allowed per dashboard.">
+                                <field name="hb_max_items_per_dashboard"/>
+                            </setting>
+                        </block>
+
+                        <block title="Features" name="hb_features">
+                            <setting string="Enable Data Export" help="Allow users to export chart data as Excel, CSV, and PDF.">
+                                <field name="hb_enable_export"/>
+                            </setting>
+                        </block>
+
+                        <block title="Feature Suite" name="hb_feature_suite">
+                            <setting string="Click-to-Filter Charts" help="Let users click a chart element to filter every other chart on the dashboard. Requires the BI Dashboard – Cross-Filtering app.">
+                                <field name="hb_enable_crossfilter"/>
+                            </setting>
+                            <setting string="Dashboard Filter Bar" help="Show dashboard-level filter controls above the charts. Requires the BI Dashboard – Filter Bar app.">
+                                <field name="hb_enable_filterbar"/>
+                            </setting>
+                            <setting string="Formula KPI Cards" help="Allow formula-based KPI tiles that combine multiple sub-queries. Requires the BI Dashboard – Formula KPI app.">
+                                <field name="hb_enable_formula"/>
+                            </setting>
+                        </block>
+
+                    </app>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

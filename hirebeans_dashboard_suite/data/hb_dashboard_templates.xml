@@ -1,0 +1,1213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ========== SALES OVERVIEW ========== -->
+        <record id="dashboard_sales_template" model="hb.dashboard">
+            <field name="name">Sales Overview</field>
+            <field name="description">Key sales metrics: orders, revenue, top products, and monthly trends.</field>
+            <field name="industry_tag">sales</field>
+            <field name="is_template">True</field>
+            <field name="is_public">True</field>
+            <field name="theme">light</field>
+            <field name="primary_color">#667eea</field>
+            <field name="icon">fa-shopping-cart</field>
+            <field name="color_class">#667eea</field>
+            <field name="default_date_filter">this_month</field>
+        </record>
+
+        <record id="item_sales_total_orders" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_sales_template"/>
+            <field name="name">Total Orders</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','sale.order')]"/>
+            <field name="aggregate">count</field>
+            <field name="domain">[["state", "in", ["sale", "done"]]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-shopping-cart</field>
+            <field name="kpi_color">blue</field>
+            <field name="kpi_format">number</field>
+            <field name="compare_period">previous</field>
+            <field name="x">0</field><field name="y">0</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_sales_revenue" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_sales_template"/>
+            <field name="name">Total Revenue</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','sale.order')]"/>
+            <field name="aggregate">sum</field>
+            <field name="y_field">amount_total</field>
+            <field name="domain">[["state", "in", ["sale", "done"]]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-money</field>
+            <field name="kpi_color">green</field>
+            <field name="kpi_format">currency</field>
+            <field name="compare_period">previous</field>
+            <field name="x">3</field><field name="y">0</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_sales_avg_order" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_sales_template"/>
+            <field name="name">Avg Order Value</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','sale.order')]"/>
+            <field name="aggregate">avg</field>
+            <field name="y_field">amount_total</field>
+            <field name="domain">[["state", "in", ["sale", "done"]]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-calculator</field>
+            <field name="kpi_color">teal</field>
+            <field name="kpi_format">currency</field>
+            <field name="x">6</field><field name="y">0</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_sales_quotations" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_sales_template"/>
+            <field name="name">Open Quotations</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','sale.order')]"/>
+            <field name="aggregate">count</field>
+            <field name="domain">[["state", "=", "draft"]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-file-o</field>
+            <field name="kpi_color">orange</field>
+            <field name="kpi_format">number</field>
+            <field name="x">9</field><field name="y">0</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_sales_to_invoice" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_sales_template"/>
+            <field name="name">Orders To Invoice</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','sale.order')]"/>
+            <field name="aggregate">count</field>
+            <field name="domain">[["invoice_status", "=", "to invoice"]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-file-text-o</field>
+            <field name="kpi_color">purple</field>
+            <field name="kpi_format">number</field>
+            <field name="x">0</field><field name="y">2</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_sales_by_month" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_sales_template"/>
+            <field name="name">Revenue by Month</field>
+            <field name="item_type">bar</field>
+            <field name="model_id" search="[('model','=','sale.order')]"/>
+            <field name="x_field">date_order:month</field>
+            <field name="groupby_field">date_order:month</field>
+            <field name="aggregate">sum</field>
+            <field name="y_field">amount_total</field>
+            <field name="domain">[["state", "in", ["sale", "done"]]]</field>
+            <field name="date_field">date_order</field>
+            <field name="date_filter">last_365</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">4</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_sales_by_salesperson" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_sales_template"/>
+            <field name="name">Orders by Salesperson</field>
+            <field name="item_type">pie</field>
+            <field name="model_id" search="[('model','=','sale.order')]"/>
+            <field name="x_field">user_id</field>
+            <field name="groupby_field">user_id</field>
+            <field name="aggregate">sum</field>
+            <field name="y_field">amount_total</field>
+            <field name="domain">[["state", "in", ["sale", "done"]]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">4</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_sales_by_team" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_sales_template"/>
+            <field name="name">Orders by Team</field>
+            <field name="item_type">doughnut</field>
+            <field name="model_id" search="[('model','=','sale.order')]"/>
+            <field name="x_field">team_id</field>
+            <field name="groupby_field">team_id</field>
+            <field name="aggregate">sum</field>
+            <field name="y_field">amount_total</field>
+            <field name="domain">[["state", "in", ["sale", "done"]]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">8</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_sales_by_status" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_sales_template"/>
+            <field name="name">Orders by Status</field>
+            <field name="item_type">pie</field>
+            <field name="model_id" search="[('model','=','sale.order')]"/>
+            <field name="x_field">state</field>
+            <field name="groupby_field">state</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">8</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_sales_top_customers" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_sales_template"/>
+            <field name="name">Top Customers by Revenue</field>
+            <field name="item_type">bar</field>
+            <field name="model_id" search="[('model','=','sale.order')]"/>
+            <field name="x_field">partner_id</field>
+            <field name="groupby_field">partner_id</field>
+            <field name="aggregate">sum</field>
+            <field name="y_field">amount_total</field>
+            <field name="domain">[["state", "in", ["sale", "done"]]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">12</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_sales_trend" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_sales_template"/>
+            <field name="name">Orders Trend by Month</field>
+            <field name="item_type">line</field>
+            <field name="model_id" search="[('model','=','sale.order')]"/>
+            <field name="x_field">date_order:month</field>
+            <field name="groupby_field">date_order:month</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[]</field>
+            <field name="date_field">date_order</field>
+            <field name="date_filter">last_365</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">12</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_sales_invoice_status" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_sales_template"/>
+            <field name="name">Invoice Status Breakdown</field>
+            <field name="item_type">doughnut</field>
+            <field name="model_id" search="[('model','=','sale.order')]"/>
+            <field name="x_field">invoice_status</field>
+            <field name="groupby_field">invoice_status</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[["state", "in", ["sale", "done"]]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">16</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_sales_delivery_status" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_sales_template"/>
+            <field name="name">Delivery Status Breakdown</field>
+            <field name="item_type">pie</field>
+            <field name="model_id" search="[('model','=','sale.order')]"/>
+            <field name="x_field">delivery_status</field>
+            <field name="groupby_field">delivery_status</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[["state", "in", ["sale", "done"]]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">16</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_sales_by_source" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_sales_template"/>
+            <field name="name">Revenue by Source</field>
+            <field name="item_type">bar</field>
+            <field name="model_id" search="[('model','=','sale.order')]"/>
+            <field name="x_field">source_id</field>
+            <field name="groupby_field">source_id</field>
+            <field name="aggregate">sum</field>
+            <field name="y_field">amount_total</field>
+            <field name="domain">[["state", "in", ["sale", "done"]]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">20</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_sales_by_warehouse" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_sales_template"/>
+            <field name="name">Orders by Warehouse</field>
+            <field name="item_type">bar</field>
+            <field name="model_id" search="[('model','=','sale.order')]"/>
+            <field name="x_field">warehouse_id</field>
+            <field name="groupby_field">warehouse_id</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[["state", "in", ["sale", "done"]]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">20</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <!-- ========== CRM PIPELINE ========== -->
+        <record id="dashboard_crm_template" model="hb.dashboard">
+            <field name="name">CRM Pipeline</field>
+            <field name="description">CRM pipeline overview: leads, opportunities, conversion rate, and pipeline value.</field>
+            <field name="industry_tag">crm</field>
+            <field name="is_template">True</field>
+            <field name="is_public">True</field>
+            <field name="theme">light</field>
+            <field name="primary_color">#a855f7</field>
+            <field name="icon">fa-bullseye</field>
+            <field name="color_class">#a855f7</field>
+            <field name="default_date_filter">this_month</field>
+        </record>
+
+        <record id="item_crm_opportunities" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_crm_template"/>
+            <field name="name">Open Opportunities</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','crm.lead')]"/>
+            <field name="aggregate">count</field>
+            <field name="domain">[["type", "=", "opportunity"], ["active", "=", true]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-handshake-o</field>
+            <field name="kpi_color">blue</field>
+            <field name="kpi_format">number</field>
+            <field name="x">0</field><field name="y">0</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_crm_pipeline_value" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_crm_template"/>
+            <field name="name">Pipeline Value</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','crm.lead')]"/>
+            <field name="aggregate">sum</field>
+            <field name="y_field">expected_revenue</field>
+            <field name="domain">[["type", "=", "opportunity"], ["active", "=", true]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-money</field>
+            <field name="kpi_color">green</field>
+            <field name="kpi_format">currency</field>
+            <field name="x">3</field><field name="y">0</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_crm_weighted_pipeline" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_crm_template"/>
+            <field name="name">Weighted Pipeline</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','crm.lead')]"/>
+            <field name="aggregate">sum</field>
+            <field name="y_field">prorated_revenue</field>
+            <field name="domain">[["type", "=", "opportunity"], ["active", "=", true]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-balance-scale</field>
+            <field name="kpi_color">teal</field>
+            <field name="kpi_format">currency</field>
+            <field name="x">6</field><field name="y">0</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_crm_avg_revenue" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_crm_template"/>
+            <field name="name">Avg Deal Value</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','crm.lead')]"/>
+            <field name="aggregate">avg</field>
+            <field name="y_field">expected_revenue</field>
+            <field name="domain">[["type", "=", "opportunity"], ["active", "=", true]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-calculator</field>
+            <field name="kpi_color">orange</field>
+            <field name="kpi_format">currency</field>
+            <field name="x">9</field><field name="y">0</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_crm_total_leads" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_crm_template"/>
+            <field name="name">Total Leads</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','crm.lead')]"/>
+            <field name="aggregate">count</field>
+            <field name="domain">[["type", "=", "lead"]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-user-plus</field>
+            <field name="kpi_color">purple</field>
+            <field name="kpi_format">number</field>
+            <field name="x">0</field><field name="y">2</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_crm_by_stage" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_crm_template"/>
+            <field name="name">Opportunities by Stage</field>
+            <field name="item_type">funnel</field>
+            <field name="model_id" search="[('model','=','crm.lead')]"/>
+            <field name="x_field">stage_id</field>
+            <field name="groupby_field">stage_id</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[["type", "=", "opportunity"], ["active", "=", true]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">4</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_crm_value_by_stage" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_crm_template"/>
+            <field name="name">Pipeline Value by Stage</field>
+            <field name="item_type">bar</field>
+            <field name="model_id" search="[('model','=','crm.lead')]"/>
+            <field name="x_field">stage_id</field>
+            <field name="groupby_field">stage_id</field>
+            <field name="aggregate">sum</field>
+            <field name="y_field">expected_revenue</field>
+            <field name="domain">[["type", "=", "opportunity"], ["active", "=", true]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">4</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_crm_by_source" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_crm_template"/>
+            <field name="name">Leads by Source</field>
+            <field name="item_type">pie</field>
+            <field name="model_id" search="[('model','=','crm.lead')]"/>
+            <field name="x_field">source_id</field>
+            <field name="groupby_field">source_id</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">8</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_crm_by_salesperson" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_crm_template"/>
+            <field name="name">Revenue by Salesperson</field>
+            <field name="item_type">bar</field>
+            <field name="model_id" search="[('model','=','crm.lead')]"/>
+            <field name="x_field">user_id</field>
+            <field name="groupby_field">user_id</field>
+            <field name="aggregate">sum</field>
+            <field name="y_field">expected_revenue</field>
+            <field name="domain">[["type", "=", "opportunity"], ["active", "=", true]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">8</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_crm_by_team" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_crm_template"/>
+            <field name="name">Deals by Team</field>
+            <field name="item_type">doughnut</field>
+            <field name="model_id" search="[('model','=','crm.lead')]"/>
+            <field name="x_field">team_id</field>
+            <field name="groupby_field">team_id</field>
+            <field name="aggregate">sum</field>
+            <field name="y_field">expected_revenue</field>
+            <field name="domain">[["type", "=", "opportunity"], ["active", "=", true]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">12</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_crm_trend" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_crm_template"/>
+            <field name="name">Pipeline Trend by Month</field>
+            <field name="item_type">line</field>
+            <field name="model_id" search="[('model','=','crm.lead')]"/>
+            <field name="x_field">create_date:month</field>
+            <field name="groupby_field">create_date:month</field>
+            <field name="aggregate">sum</field>
+            <field name="y_field">expected_revenue</field>
+            <field name="domain">[["type", "=", "opportunity"]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">last_365</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">12</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_crm_lost_reasons" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_crm_template"/>
+            <field name="name">Lost Reasons</field>
+            <field name="item_type">pie</field>
+            <field name="model_id" search="[('model','=','crm.lead')]"/>
+            <field name="x_field">lost_reason_id</field>
+            <field name="groupby_field">lost_reason_id</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[["won_status", "=", "lost"]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">16</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_crm_priority" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_crm_template"/>
+            <field name="name">Priority Breakdown</field>
+            <field name="item_type">doughnut</field>
+            <field name="model_id" search="[('model','=','crm.lead')]"/>
+            <field name="x_field">priority</field>
+            <field name="groupby_field">priority</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">16</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_crm_avg_prob" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_crm_template"/>
+            <field name="name">Avg Probability by Stage</field>
+            <field name="item_type">bar</field>
+            <field name="model_id" search="[('model','=','crm.lead')]"/>
+            <field name="x_field">stage_id</field>
+            <field name="groupby_field">stage_id</field>
+            <field name="aggregate">avg</field>
+            <field name="y_field">probability</field>
+            <field name="domain">[]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">20</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_crm_created_trend" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_crm_template"/>
+            <field name="name">Deals Created by Month</field>
+            <field name="item_type">line</field>
+            <field name="model_id" search="[('model','=','crm.lead')]"/>
+            <field name="x_field">create_date:month</field>
+            <field name="groupby_field">create_date:month</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">last_365</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">20</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <!-- ========== HR OVERVIEW ========== -->
+        <record id="dashboard_hr_template" model="hb.dashboard">
+            <field name="name">HR Overview</field>
+            <field name="description">Human Resources metrics: employees, departments, attendance, and leaves.</field>
+            <field name="industry_tag">hr</field>
+            <field name="is_template">True</field>
+            <field name="is_public">True</field>
+            <field name="theme">light</field>
+            <field name="primary_color">#11998e</field>
+            <field name="icon">fa-users</field>
+            <field name="color_class">#11998e</field>
+            <field name="default_date_filter">this_month</field>
+        </record>
+
+        <record id="item_hr_employees" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_hr_template"/>
+            <field name="name">Total Employees</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','hr.employee')]"/>
+            <field name="aggregate">count</field>
+            <field name="domain">[["active", "=", true]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-users</field>
+            <field name="kpi_color">blue</field>
+            <field name="kpi_format">number</field>
+            <field name="x">0</field><field name="y">0</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_hr_open_positions" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_hr_template"/>
+            <field name="name">Open Job Positions</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','hr.job')]"/>
+            <field name="aggregate">sum</field>
+            <field name="y_field">no_of_recruitment</field>
+            <field name="domain">[["no_of_recruitment", "&gt;", 0]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-briefcase</field>
+            <field name="kpi_color">orange</field>
+            <field name="kpi_format">number</field>
+            <field name="x">3</field><field name="y">0</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_hr_candidates" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_hr_template"/>
+            <field name="name">Total Candidates</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','hr.applicant')]"/>
+            <field name="aggregate">count</field>
+            <field name="domain">[["active", "=", true]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-id-card</field>
+            <field name="kpi_color">purple</field>
+            <field name="kpi_format">number</field>
+            <field name="x">6</field><field name="y">0</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_hr_hired" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_hr_template"/>
+            <field name="name">Hired (All Time)</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','hr.applicant')]"/>
+            <field name="aggregate">count</field>
+            <field name="domain">[["date_closed", "!=", false]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-check-circle</field>
+            <field name="kpi_color">green</field>
+            <field name="kpi_format">number</field>
+            <field name="x">9</field><field name="y">0</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_hr_avg_days" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_hr_template"/>
+            <field name="name">Avg Days to Close</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','hr.applicant')]"/>
+            <field name="aggregate">avg</field>
+            <field name="y_field">delay_close</field>
+            <field name="domain">[["delay_close", "&gt;", 0]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-clock-o</field>
+            <field name="kpi_color">teal</field>
+            <field name="kpi_format">duration</field>
+            <field name="x">0</field><field name="y">2</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_hr_by_stage" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_hr_template"/>
+            <field name="name">Candidates by Stage</field>
+            <field name="item_type">funnel</field>
+            <field name="model_id" search="[('model','=','hr.applicant')]"/>
+            <field name="x_field">stage_id</field>
+            <field name="groupby_field">stage_id</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">4</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_hr_by_job" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_hr_template"/>
+            <field name="name">Candidates by Job</field>
+            <field name="item_type">bar</field>
+            <field name="model_id" search="[('model','=','hr.applicant')]"/>
+            <field name="x_field">job_id</field>
+            <field name="groupby_field">job_id</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">4</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_hr_by_source" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_hr_template"/>
+            <field name="name">Candidates by Source</field>
+            <field name="item_type">pie</field>
+            <field name="model_id" search="[('model','=','hr.applicant')]"/>
+            <field name="x_field">source_id</field>
+            <field name="groupby_field">source_id</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">8</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_hr_by_priority" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_hr_template"/>
+            <field name="name">Candidates by Priority</field>
+            <field name="item_type">doughnut</field>
+            <field name="model_id" search="[('model','=','hr.applicant')]"/>
+            <field name="x_field">priority</field>
+            <field name="groupby_field">priority</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">8</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_hr_apps_trend" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_hr_template"/>
+            <field name="name">Applications Trend by Month</field>
+            <field name="item_type">line</field>
+            <field name="model_id" search="[('model','=','hr.applicant')]"/>
+            <field name="x_field">create_date:month</field>
+            <field name="groupby_field">create_date:month</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">last_365</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">12</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_hr_refusal_reasons" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_hr_template"/>
+            <field name="name">Refusal Reasons</field>
+            <field name="item_type">pie</field>
+            <field name="model_id" search="[('model','=','hr.applicant')]"/>
+            <field name="x_field">refuse_reason_id</field>
+            <field name="groupby_field">refuse_reason_id</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[["refuse_reason_id", "!=", false]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">12</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_hr_openings_by_dept" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_hr_template"/>
+            <field name="name">Open Positions by Department</field>
+            <field name="item_type">bar</field>
+            <field name="model_id" search="[('model','=','hr.job')]"/>
+            <field name="x_field">department_id</field>
+            <field name="groupby_field">department_id</field>
+            <field name="aggregate">sum</field>
+            <field name="y_field">no_of_recruitment</field>
+            <field name="domain">[["no_of_recruitment", "&gt;", 0]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">16</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_hr_hired_by_job" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_hr_template"/>
+            <field name="name">Hired Employees by Job</field>
+            <field name="item_type">bar</field>
+            <field name="model_id" search="[('model','=','hr.job')]"/>
+            <field name="x_field">name</field>
+            <field name="groupby_field">name</field>
+            <field name="aggregate">sum</field>
+            <field name="y_field">no_of_hired_employee</field>
+            <field name="domain">[]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">16</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_hr_avg_salary" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_hr_template"/>
+            <field name="name">Avg Expected Salary by Job</field>
+            <field name="item_type">bar</field>
+            <field name="model_id" search="[('model','=','hr.applicant')]"/>
+            <field name="x_field">job_id</field>
+            <field name="groupby_field">job_id</field>
+            <field name="aggregate">avg</field>
+            <field name="y_field">salary_expected</field>
+            <field name="domain">[["salary_expected", "&gt;", 0]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">20</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_hr_by_manager" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_hr_template"/>
+            <field name="name">Headcount by Manager</field>
+            <field name="item_type">bar</field>
+            <field name="model_id" search="[('model','=','hr.employee')]"/>
+            <field name="x_field">parent_id</field>
+            <field name="groupby_field">parent_id</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[["active", "=", true]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">20</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <!-- ========== ACCOUNTING OVERVIEW ========== -->
+        <record id="dashboard_accounting_template" model="hb.dashboard">
+            <field name="name">Accounting Overview</field>
+            <field name="description">Financial metrics: invoices, payments, receivables, and payables.</field>
+            <field name="industry_tag">accounting</field>
+            <field name="is_template">True</field>
+            <field name="is_public">True</field>
+            <field name="theme">light</field>
+            <field name="primary_color">#f7971e</field>
+            <field name="icon">fa-calculator</field>
+            <field name="color_class">#f7971e</field>
+            <field name="default_date_filter">this_month</field>
+        </record>
+
+        <record id="item_acc_invoices" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_accounting_template"/>
+            <field name="name">Posted Invoices</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','account.move')]"/>
+            <field name="aggregate">count</field>
+            <field name="domain">[["move_type", "=", "out_invoice"], ["state", "=", "posted"]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-file-text</field>
+            <field name="kpi_color">blue</field>
+            <field name="kpi_format">number</field>
+            <field name="x">0</field><field name="y">0</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_acc_revenue" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_accounting_template"/>
+            <field name="name">Total Invoiced</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','account.move')]"/>
+            <field name="aggregate">sum</field>
+            <field name="y_field">amount_total</field>
+            <field name="domain">[["move_type", "=", "out_invoice"], ["state", "=", "posted"]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-money</field>
+            <field name="kpi_color">green</field>
+            <field name="kpi_format">currency</field>
+            <field name="x">3</field><field name="y">0</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_acc_outstanding" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_accounting_template"/>
+            <field name="name">Outstanding Receivables</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','account.move')]"/>
+            <field name="aggregate">sum</field>
+            <field name="y_field">amount_residual</field>
+            <field name="domain">[["move_type", "=", "out_invoice"], ["state", "=", "posted"], ["payment_state", "in", ["not_paid", "partial"]]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-exclamation-circle</field>
+            <field name="kpi_color">orange</field>
+            <field name="kpi_format">currency</field>
+            <field name="x">6</field><field name="y">0</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_acc_avg_invoice" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_accounting_template"/>
+            <field name="name">Avg Invoice Value</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','account.move')]"/>
+            <field name="aggregate">avg</field>
+            <field name="y_field">amount_total</field>
+            <field name="domain">[["move_type", "=", "out_invoice"], ["state", "=", "posted"]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-calculator</field>
+            <field name="kpi_color">teal</field>
+            <field name="kpi_format">currency</field>
+            <field name="x">9</field><field name="y">0</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_acc_bills" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_accounting_template"/>
+            <field name="name">Bills Payable</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','account.move')]"/>
+            <field name="aggregate">count</field>
+            <field name="domain">[["move_type", "=", "in_invoice"], ["state", "=", "posted"]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-credit-card</field>
+            <field name="kpi_color">purple</field>
+            <field name="kpi_format">number</field>
+            <field name="x">0</field><field name="y">2</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_acc_revenue_by_month" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_accounting_template"/>
+            <field name="name">Invoiced Revenue by Month</field>
+            <field name="item_type">area</field>
+            <field name="model_id" search="[('model','=','account.move')]"/>
+            <field name="x_field">invoice_date:month</field>
+            <field name="groupby_field">invoice_date:month</field>
+            <field name="aggregate">sum</field>
+            <field name="y_field">amount_total</field>
+            <field name="domain">[["move_type", "=", "out_invoice"], ["state", "=", "posted"]]</field>
+            <field name="date_field">invoice_date</field>
+            <field name="date_filter">last_365</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">4</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_acc_by_payment_status" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_accounting_template"/>
+            <field name="name">Invoices by Payment Status</field>
+            <field name="item_type">pie</field>
+            <field name="model_id" search="[('model','=','account.move')]"/>
+            <field name="x_field">payment_state</field>
+            <field name="groupby_field">payment_state</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[["move_type", "=", "out_invoice"], ["state", "=", "posted"]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">4</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_acc_top_customers" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_accounting_template"/>
+            <field name="name">Top Customers by Invoiced Amount</field>
+            <field name="item_type">bar</field>
+            <field name="model_id" search="[('model','=','account.move')]"/>
+            <field name="x_field">partner_id</field>
+            <field name="groupby_field">partner_id</field>
+            <field name="aggregate">sum</field>
+            <field name="y_field">amount_total</field>
+            <field name="domain">[["move_type", "=", "out_invoice"], ["state", "=", "posted"]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">8</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_acc_outstanding_by_customer" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_accounting_template"/>
+            <field name="name">Outstanding by Customer</field>
+            <field name="item_type">bar</field>
+            <field name="model_id" search="[('model','=','account.move')]"/>
+            <field name="x_field">partner_id</field>
+            <field name="groupby_field">partner_id</field>
+            <field name="aggregate">sum</field>
+            <field name="y_field">amount_residual</field>
+            <field name="domain">[["move_type", "=", "out_invoice"], ["state", "=", "posted"], ["payment_state", "!=", "paid"]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">8</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_acc_bills_by_vendor" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_accounting_template"/>
+            <field name="name">Bills by Vendor</field>
+            <field name="item_type">bar</field>
+            <field name="model_id" search="[('model','=','account.move')]"/>
+            <field name="x_field">partner_id</field>
+            <field name="groupby_field">partner_id</field>
+            <field name="aggregate">sum</field>
+            <field name="y_field">amount_total</field>
+            <field name="domain">[["move_type", "=", "in_invoice"], ["state", "=", "posted"]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">12</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_acc_by_journal" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_accounting_template"/>
+            <field name="name">Invoices by Journal</field>
+            <field name="item_type">doughnut</field>
+            <field name="model_id" search="[('model','=','account.move')]"/>
+            <field name="x_field">journal_id</field>
+            <field name="groupby_field">journal_id</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[["state", "=", "posted"]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">12</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_acc_status_breakdown" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_accounting_template"/>
+            <field name="name">Invoice Status Breakdown</field>
+            <field name="item_type">pie</field>
+            <field name="model_id" search="[('model','=','account.move')]"/>
+            <field name="x_field">state</field>
+            <field name="groupby_field">state</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[["move_type", "=", "out_invoice"]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">16</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_acc_bills_trend" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_accounting_template"/>
+            <field name="name">Monthly Bills Trend</field>
+            <field name="item_type">line</field>
+            <field name="model_id" search="[('model','=','account.move')]"/>
+            <field name="x_field">invoice_date:month</field>
+            <field name="groupby_field">invoice_date:month</field>
+            <field name="aggregate">sum</field>
+            <field name="y_field">amount_total</field>
+            <field name="domain">[["move_type", "=", "in_invoice"], ["state", "=", "posted"]]</field>
+            <field name="date_field">invoice_date</field>
+            <field name="date_filter">last_365</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">16</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_acc_overdue" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_accounting_template"/>
+            <field name="name">Overdue Invoices by Customer</field>
+            <field name="item_type">bar</field>
+            <field name="model_id" search="[('model','=','account.move')]"/>
+            <field name="x_field">partner_id</field>
+            <field name="groupby_field">partner_id</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[["move_type", "=", "out_invoice"], ["state", "=", "posted"], ["payment_state", "=", "not_paid"]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">20</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_acc_tax_by_month" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_accounting_template"/>
+            <field name="name">Tax Collected by Month</field>
+            <field name="item_type">line</field>
+            <field name="model_id" search="[('model','=','account.move')]"/>
+            <field name="x_field">invoice_date:month</field>
+            <field name="groupby_field">invoice_date:month</field>
+            <field name="aggregate">sum</field>
+            <field name="y_field">amount_tax</field>
+            <field name="domain">[["move_type", "=", "out_invoice"], ["state", "=", "posted"]]</field>
+            <field name="date_field">invoice_date</field>
+            <field name="date_filter">last_365</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">20</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <!-- ========== INVENTORY OVERVIEW ========== -->
+        <record id="dashboard_inventory_template" model="hb.dashboard">
+            <field name="name">Inventory Overview</field>
+            <field name="description">Stock levels, transfers, and inventory valuation metrics.</field>
+            <field name="industry_tag">inventory</field>
+            <field name="is_template">True</field>
+            <field name="is_public">True</field>
+            <field name="theme">light</field>
+            <field name="primary_color">#43c46e</field>
+            <field name="icon">fa-cubes</field>
+            <field name="color_class">#43c46e</field>
+            <field name="default_date_filter">this_month</field>
+        </record>
+
+        <record id="item_inv_products" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_inventory_template"/>
+            <field name="name">Total Products</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','product.product')]"/>
+            <field name="aggregate">count</field>
+            <field name="domain">[["active", "=", true]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-cube</field>
+            <field name="kpi_color">blue</field>
+            <field name="kpi_format">number</field>
+            <field name="x">0</field><field name="y">0</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_inv_on_hand" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_inventory_template"/>
+            <field name="name">On-Hand Quantity</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','stock.quant')]"/>
+            <field name="aggregate">sum</field>
+            <field name="y_field">quantity</field>
+            <field name="domain">[["location_id.usage", "=", "internal"]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-cubes</field>
+            <field name="kpi_color">green</field>
+            <field name="kpi_format">number</field>
+            <field name="x">3</field><field name="y">0</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_inv_reserved" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_inventory_template"/>
+            <field name="name">Reserved Quantity</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','stock.quant')]"/>
+            <field name="aggregate">sum</field>
+            <field name="y_field">reserved_quantity</field>
+            <field name="domain">[["location_id.usage", "=", "internal"]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-lock</field>
+            <field name="kpi_color">orange</field>
+            <field name="kpi_format">number</field>
+            <field name="x">6</field><field name="y">0</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_inv_transfers" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_inventory_template"/>
+            <field name="name">Pending Transfers</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','stock.picking')]"/>
+            <field name="aggregate">count</field>
+            <field name="domain">[["state", "=", "assigned"]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-truck</field>
+            <field name="kpi_color">purple</field>
+            <field name="kpi_format">number</field>
+            <field name="x">9</field><field name="y">0</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_inv_backorders" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_inventory_template"/>
+            <field name="name">Backorders</field>
+            <field name="item_type">tile</field>
+            <field name="model_id" search="[('model','=','stock.picking')]"/>
+            <field name="aggregate">count</field>
+            <field name="domain">[["backorder_id", "!=", false]]</field>
+            <field name="date_filter">all</field>
+            <field name="kpi_icon">fa-undo</field>
+            <field name="kpi_color">teal</field>
+            <field name="kpi_format">number</field>
+            <field name="x">0</field><field name="y">2</field><field name="w">3</field><field name="h">2</field>
+        </record>
+
+        <record id="item_inv_qty_by_product" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_inventory_template"/>
+            <field name="name">On-Hand Qty by Product</field>
+            <field name="item_type">bar</field>
+            <field name="model_id" search="[('model','=','stock.quant')]"/>
+            <field name="x_field">product_id</field>
+            <field name="groupby_field">product_id</field>
+            <field name="aggregate">sum</field>
+            <field name="y_field">quantity</field>
+            <field name="domain">[["location_id.usage", "=", "internal"]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">4</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_inv_qty_by_location" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_inventory_template"/>
+            <field name="name">On-Hand Qty by Location</field>
+            <field name="item_type">pie</field>
+            <field name="model_id" search="[('model','=','stock.quant')]"/>
+            <field name="x_field">location_id</field>
+            <field name="groupby_field">location_id</field>
+            <field name="aggregate">sum</field>
+            <field name="y_field">quantity</field>
+            <field name="domain">[["location_id.usage", "=", "internal"]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">4</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_inv_moves_by_state" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_inventory_template"/>
+            <field name="name">Stock Moves by State</field>
+            <field name="item_type">doughnut</field>
+            <field name="model_id" search="[('model','=','stock.move')]"/>
+            <field name="x_field">state</field>
+            <field name="groupby_field">state</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">8</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_inv_incoming_trend" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_inventory_template"/>
+            <field name="name">Incoming Moves Trend</field>
+            <field name="item_type">line</field>
+            <field name="model_id" search="[('model','=','stock.move')]"/>
+            <field name="x_field">date:month</field>
+            <field name="groupby_field">date:month</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[["is_in", "=", true]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">last_365</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">8</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_inv_outgoing_trend" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_inventory_template"/>
+            <field name="name">Outgoing Moves Trend</field>
+            <field name="item_type">line</field>
+            <field name="model_id" search="[('model','=','stock.move')]"/>
+            <field name="x_field">date:month</field>
+            <field name="groupby_field">date:month</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[["is_out", "=", true]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">last_365</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">12</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_inv_by_picking_type" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_inventory_template"/>
+            <field name="name">Transfers by Picking Type</field>
+            <field name="item_type">bar</field>
+            <field name="model_id" search="[('model','=','stock.picking')]"/>
+            <field name="x_field">picking_type_id</field>
+            <field name="groupby_field">picking_type_id</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">12</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_inv_by_status" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_inventory_template"/>
+            <field name="name">Transfers by Status</field>
+            <field name="item_type">pie</field>
+            <field name="model_id" search="[('model','=','stock.picking')]"/>
+            <field name="x_field">state</field>
+            <field name="groupby_field">state</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">16</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_inv_value_by_month" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_inventory_template"/>
+            <field name="name">Product Value Moved by Month</field>
+            <field name="item_type">area</field>
+            <field name="model_id" search="[('model','=','stock.move')]"/>
+            <field name="x_field">date:month</field>
+            <field name="groupby_field">date:month</field>
+            <field name="aggregate">sum</field>
+            <field name="y_field">value</field>
+            <field name="domain">[["state", "=", "done"]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">last_365</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">16</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_inv_top_moved" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_inventory_template"/>
+            <field name="name">Top Moved Products</field>
+            <field name="item_type">bar</field>
+            <field name="model_id" search="[('model','=','stock.move')]"/>
+            <field name="x_field">product_id</field>
+            <field name="groupby_field">product_id</field>
+            <field name="aggregate">sum</field>
+            <field name="y_field">product_qty</field>
+            <field name="domain">[["state", "=", "done"]]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">0</field><field name="y">20</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+        <record id="item_inv_by_warehouse" model="hb.dashboard.item">
+            <field name="dashboard_id" ref="dashboard_inventory_template"/>
+            <field name="name">Moves by Warehouse</field>
+            <field name="item_type">bar</field>
+            <field name="model_id" search="[('model','=','stock.move')]"/>
+            <field name="x_field">warehouse_id</field>
+            <field name="groupby_field">warehouse_id</field>
+            <field name="aggregate">count</field>
+            <field name="domain">[]</field>
+            <field name="date_field">create_date</field>
+            <field name="date_filter">all</field>
+            <field name="show_legend">True</field>
+            <field name="x">6</field><field name="y">20</field><field name="w">6</field><field name="h">4</field>
+        </record>
+
+    </data>
+</odoo>

@@ -1,0 +1,296 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<!-- ─── Dashboard Home / List ─────────────────────────────────────────────── -->
+<t t-name="hirebeans_dashboard_suite.DashboardMain">
+  <div class="hb-dashboard-root">
+    <div class="hb-home">
+
+      <!-- Header -->
+      <div class="hb-home-header">
+        <h1>
+          <span class="hb-logo-icon"><i class="fa fa-tachometer"/></span>
+          HireBeans Dashboards
+        </h1>
+        <div class="hb-home-actions">
+          <div class="hb-search-bar">
+            <i class="fa fa-search"/>
+            <input type="text" placeholder="Search dashboards…" t-on-input="onSearch"/>
+          </div>
+          <button class="hb-btn hb-btn-outline" t-on-click="showImport">
+            <i class="fa fa-upload"/> Import
+          </button>
+          <button class="hb-btn hb-btn-primary" t-on-click="showCreate">
+            <i class="fa fa-plus"/> New Dashboard
+          </button>
+        </div>
+      </div>
+
+      <!-- Greeting -->
+      <div class="hb-greeting">
+        <h2 t-esc="greeting"/>
+        <p t-esc="greetingSubtitle"/>
+      </div>
+
+      <!-- Stat Chips -->
+      <div class="hb-stat-row">
+        <t t-foreach="statCards" t-as="stat" t-key="stat.label">
+          <div class="hb-stat-chip">
+            <div class="hb-stat-icon" t-att-class="stat.color"><i t-att-class="'fa ' + stat.icon"/></div>
+            <div>
+              <div class="hb-stat-value" t-esc="stat.value"/>
+              <div class="hb-stat-label" t-esc="stat.label"/>
+            </div>
+          </div>
+        </t>
+      </div>
+
+      <!-- Pinned + Continue where you left off -->
+      <div class="hb-home-panels" t-if="pinnedDashboards.length or recentDashboards.length">
+        <div class="hb-home-panel" t-if="pinnedDashboards.length">
+          <div class="hb-panel-title">Pinned</div>
+          <div class="hb-pinned-row">
+            <t t-foreach="pinnedDashboards" t-as="dash" t-key="dash.id">
+              <div class="hb-pinned-chip" t-on-click="() => this.openDashboard(dash)">
+                <div class="hb-pinned-icon" t-att-style="'background: linear-gradient(135deg,' + (dash.color_class || '#667eea') + ', #764ba2)'">
+                  <i t-att-class="'fa ' + (dash.icon || 'fa-tachometer')"/>
+                </div>
+                <div>
+                  <div class="hb-pinned-name" t-esc="dash.name"/>
+                  <div class="hb-pinned-meta" t-esc="getIndustryLabel(dash.industry_tag) + ' · ' + dash.item_count + ' widgets'"/>
+                </div>
+              </div>
+            </t>
+          </div>
+        </div>
+        <div class="hb-home-panel" t-if="recentDashboards.length">
+          <div class="hb-panel-title">Continue where you left off</div>
+          <div class="hb-recent-list">
+            <t t-foreach="recentDashboards" t-as="dash" t-key="dash.id">
+              <div class="hb-recent-row" t-on-click="() => this.openDashboard(dash)">
+                <div class="hb-recent-icon" t-att-style="'background: linear-gradient(135deg,' + (dash.color_class || '#667eea') + ', #764ba2)'">
+                  <i t-att-class="'fa ' + (dash.icon || 'fa-tachometer')"/>
+                </div>
+                <div class="hb-recent-info">
+                  <div class="hb-recent-name" t-esc="dash.name"/>
+                  <div class="hb-recent-meta" t-esc="getIndustryLabel(dash.industry_tag) + ' · Opened ' + this.formatRelativeTime(dash.last_opened)"/>
+                </div>
+                <i class="fa fa-chevron-right hb-recent-arrow"/>
+              </div>
+            </t>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter Tabs -->
+      <div class="hb-filter-tabs-row">
+      <div class="hb-filter-tabs">
+        <span class="hb-tab" t-att-class="{'active': state.activeFilter === 'all'}" t-on-click="() => this.setFilter('all')">All</span>
+        <span class="hb-tab" t-att-class="{'active': state.activeFilter === 'mine'}" t-on-click="() => this.setFilter('mine')">Mine</span>
+        <span class="hb-tab" t-att-class="{'active': state.activeFilter === 'shared'}" t-on-click="() => this.setFilter('shared')">Shared</span>
+        <span class="hb-tab" t-att-class="{'active': state.activeFilter === 'public'}" t-on-click="() => this.setFilter('public')">Public</span>
+        <span class="hb-tab" t-att-class="{'active': state.activeFilter === 'bookmarked'}" t-on-click="() => this.setFilter('bookmarked')">
+          <i class="fa fa-bookmark"/> Bookmarked
+        </span>
+        <span class="hb-tab" t-att-class="{'active': state.activeFilter === 'templates'}" t-on-click="() => this.setFilter('templates')">Templates</span>
+      </div>
+      <div class="hb-sort-control">
+        <span>Sort:</span>
+        <select t-on-change="(ev) => this.setSortBy(ev.target.value)">
+          <option value="name" t-att-selected="state.sortBy === 'name'">Name A-Z</option>
+          <option value="recent" t-att-selected="state.sortBy === 'recent'">Recently opened</option>
+        </select>
+      </div>
+      </div>
+
+      <!-- Loading -->
+      <t t-if="state.loading">
+        <div class="hb-page-loading">
+          <div class="hb-spinner-lg"/>
+          <span>Loading dashboards…</span>
+        </div>
+      </t>
+
+      <!-- Dashboard Grid -->
+      <t t-elif="filteredDashboards.length > 0">
+        <div class="hb-dashboard-grid">
+          <t t-foreach="filteredDashboards" t-as="dash" t-key="dash.id">
+            <div class="hb-dashboard-card" t-on-click="() => this.openDashboard(dash)">
+
+              <!-- Decorative top accent -->
+              <div class="hb-dc-accent" t-att-style="'background: linear-gradient(90deg,' + (dash.color_class || '#667eea') + ', transparent)'"/>
+
+              <!-- Template Badge -->
+              <t t-if="dash.is_template">
+                <div class="hb-template-badge">Template</div>
+              </t>
+
+              <!-- Bookmark -->
+              <span class="hb-dc-bookmark" t-att-class="{'active': dash.is_bookmarked}"
+                    t-on-click="(ev) => this.toggleBookmark(ev, dash)">
+                <i t-att-class="dash.is_bookmarked ? 'fa fa-bookmark' : 'fa fa-bookmark-o'"/>
+              </span>
+
+              <!-- Header -->
+              <div class="hb-dc-header">
+                <div class="hb-dc-icon" t-att-style="'background: linear-gradient(135deg,' + (dash.color_class || '#667eea') + ', #764ba2)'">
+                  <i t-att-class="'fa ' + (dash.icon || 'fa-tachometer')"/>
+                </div>
+                <div>
+                  <div class="hb-dc-title" t-esc="dash.name"/>
+                  <div class="hb-dc-subtitle" t-if="dash.description" t-esc="dash.description"/>
+                </div>
+              </div>
+
+              <!-- Body -->
+              <div class="hb-dc-body">
+                <div class="hb-dc-meta">
+                  <span><i class="fa fa-bar-chart"/> <t t-esc="dash.item_count"/> items</span>
+                  <span t-if="dash.industry_tag and dash.industry_tag !== 'none'">
+                    <i class="fa fa-tag"/> <t t-esc="getIndustryLabel(dash.industry_tag)"/>
+                  </span>
+                  <span t-if="dash.is_public"><i class="fa fa-globe"/> Public</span>
+                  <span t-if="!dash.is_owner"><i class="fa fa-share-alt"/> Shared</span>
+                </div>
+                <div class="hb-dc-footer">
+                  <div class="hb-dc-owner" t-if="dash.owner_name" t-att-title="dash.owner_name">
+                    <span class="hb-dc-avatar" t-esc="getOwnerInitial(dash.owner_name)"/>
+                  </div>
+                  <div t-else="" />
+                  <div class="hb-dc-actions" t-on-click.stop="">
+                  <button class="hb-dc-open-btn" title="Open dashboard" t-on-click="() => this.openDashboard(dash)">
+                    Open <i class="fa fa-arrow-right"/>
+                  </button>
+                  <button t-if="dash.is_owner" class="danger" title="Delete"
+                          t-on-click="(ev) => this.deleteDashboard(ev, dash)">
+                    <i class="fa fa-trash"/>
+                  </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </t>
+        </div>
+      </t>
+
+      <!-- Empty State -->
+      <t t-else="">
+        <div class="hb-empty-state">
+          <i class="fa fa-tachometer"/>
+          <h3>No dashboards found</h3>
+          <p>Create your first dashboard or change the filter above.</p>
+          <button class="hb-btn hb-btn-primary" t-on-click="showCreate">
+            <i class="fa fa-plus"/> Create Dashboard
+          </button>
+        </div>
+      </t>
+
+    </div>
+
+    <!-- Create Modal -->
+    <t t-if="state.showCreateModal">
+      <div class="hb-modal-overlay" t-on-click.self="hideCreate">
+        <div class="hb-modal hb-modal-sm">
+          <div class="hb-modal-header">
+            <h3><i class="fa fa-plus-circle" style="color:#667eea;margin-right:8px"/> New Dashboard</h3>
+            <button t-on-click="hideCreate">×</button>
+          </div>
+          <div class="hb-modal-body">
+            <div class="hb-form-group">
+              <label>Dashboard Name *</label>
+              <input type="text" placeholder="e.g. Sales Overview"
+                     t-att-value="state.newDashboard.name"
+                     t-on-input="(ev) => this.onNewDashboardChange('name', ev)"/>
+            </div>
+            <div class="hb-form-group">
+              <label>Description</label>
+              <input type="text" placeholder="Optional description"
+                     t-att-value="state.newDashboard.description"
+                     t-on-input="(ev) => this.onNewDashboardChange('description', ev)"/>
+            </div>
+            <div class="hb-form-row">
+              <div class="hb-form-group">
+                <label>Theme</label>
+                <select t-on-change="(ev) => this.onNewDashboardChange('theme', ev)">
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+              <div class="hb-form-group">
+                <label>Industry</label>
+                <select t-on-change="(ev) => this.onNewDashboardChange('industry_tag', ev)">
+                  <option value="none">None</option>
+                  <option value="sales">Sales</option>
+                  <option value="crm">CRM</option>
+                  <option value="accounting">Accounting</option>
+                  <option value="inventory">Inventory</option>
+                  <option value="hr">HR</option>
+                  <option value="manufacturing">Manufacturing</option>
+                  <option value="retail">Retail</option>
+                  <option value="healthcare">Healthcare</option>
+                  <option value="finance">Finance</option>
+                  <option value="logistics">Logistics</option>
+                </select>
+              </div>
+            </div>
+            <div class="hb-form-row">
+              <div class="hb-form-group">
+                <label>Primary Color</label>
+                <input type="color" t-att-value="state.newDashboard.primary_color"
+                       t-on-input="(ev) => this.onNewDashboardChange('primary_color', ev)"/>
+              </div>
+              <div class="hb-form-group">
+                <label style="margin-top:24px">
+                  <input type="checkbox" t-att-checked="state.newDashboard.is_public"
+                         t-on-change="(ev) => this.onNewDashboardChange('is_public', ev)"/>
+                  Public Dashboard
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="hb-modal-footer">
+            <button class="hb-btn hb-btn-outline" t-on-click="hideCreate">Cancel</button>
+            <button class="hb-btn hb-btn-primary" t-on-click="createDashboard">
+              <i class="fa fa-check"/> Create
+            </button>
+          </div>
+        </div>
+      </div>
+    </t>
+
+    <!-- Import Modal -->
+    <t t-if="state.showImportModal">
+      <div class="hb-modal-overlay" t-on-click.self="hideImport">
+        <div class="hb-modal hb-modal-sm">
+          <div class="hb-modal-header">
+            <h3><i class="fa fa-upload" style="color:#667eea;margin-right:8px"/> Import Dashboard</h3>
+            <button t-on-click="hideImport">×</button>
+          </div>
+          <div class="hb-modal-body">
+            <div class="hb-form-group">
+              <label>Select JSON File</label>
+              <input type="file" accept=".json" t-on-change="onImportFileChange"/>
+            </div>
+            <div class="hb-form-group" t-if="state.importJson">
+              <label>Preview (first 200 chars)</label>
+              <textarea readonly="" style="font-size:11px;height:80px">
+                <t t-esc="state.importJson.substring(0, 200)"/>…
+              </textarea>
+            </div>
+          </div>
+          <div class="hb-modal-footer">
+            <button class="hb-btn hb-btn-outline" t-on-click="hideImport">Cancel</button>
+            <button class="hb-btn hb-btn-primary" t-on-click="importDashboard">
+              <i class="fa fa-upload"/> Import
+            </button>
+          </div>
+        </div>
+      </div>
+    </t>
+
+  </div>
+</t>
+
+</templates>
+
