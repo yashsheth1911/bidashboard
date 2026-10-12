@@ -6,7 +6,7 @@ import operator
 from odoo import http
 from odoo.http import request
 
-from odoo.addons.hirebeans_dashboard_suite.controllers.hb_main import HbDashboardController
+from .hb_main import HbDashboardController
 
 _logger = logging.getLogger(__name__)
 

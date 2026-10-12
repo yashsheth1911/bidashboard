@@ -1,6 +1,6 @@
 {
     'name': 'BI Dashboard',
-    'version': '19.0.1.2.1',
+    'version': '19.0.1.3.0',
     'category': 'Reporting/Dashboard',
     'summary': 'Advanced BI Dashboard Builder with AI, 17 chart types, drag-drop, real-time data',
     'description': """
@@ -25,6 +25,7 @@
         'views/hb_dashboard_views.xml',
         'views/hb_res_config_settings_views.xml',
         'data/hb_dashboard_templates.xml',
+        'data/hb_dashboard_formula_defaults.xml',
     ],
     'assets': {
         'web.assets_backend': [
@@ -32,9 +33,11 @@
             'hirebeans_dashboard_suite/static/src/js/hb_dashboard_main.js',
             'hirebeans_dashboard_suite/static/src/js/hb_dashboard_builder.js',
             'hirebeans_dashboard_suite/static/src/js/hb_dashboard_chart.js',
+            'hirebeans_dashboard_suite/static/src/js/hb_formula_patch.js',
             'hirebeans_dashboard_suite/static/src/xml/hb_dashboard_main.xml',
             'hirebeans_dashboard_suite/static/src/xml/hb_dashboard_builder.xml',
             'hirebeans_dashboard_suite/static/src/xml/hb_dashboard_dialogs.xml',
+            'hirebeans_dashboard_suite/static/src/xml/hb_formula_dialog.xml',
         ],
     },
     'installable': True,
