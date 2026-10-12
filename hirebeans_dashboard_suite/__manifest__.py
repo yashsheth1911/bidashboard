@@ -1,6 +1,6 @@
 {
     'name': 'BI Dashboard',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.1',
     'category': 'Reporting/Dashboard',
     'summary': 'Advanced BI Dashboard Builder with AI, 17 chart types, drag-drop, real-time data',
     'description': """
@@ -16,6 +16,7 @@
         SheetJS/xlsx 0.20.1 (Apache-2.0).
     """,
     'author': 'HireBeans.cloud',
+    'images': ['images/main_screenshot.png'],
     'depends': ['base', 'web', 'mail', 'bus'],
     'data': [
         'security/security.xml',
