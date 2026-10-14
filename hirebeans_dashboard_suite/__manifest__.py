@@ -16,7 +16,7 @@
         SheetJS/xlsx 0.20.1 (Apache-2.0).
     """,
     'author': 'HireBeans.cloud',
-    'images': ['images/main_screenshot.png'],
+    'images': ['images/store_cover.jpg', 'images/main_screenshot.png'],
     'depends': ['base', 'web', 'mail', 'bus'],
     'data': [
         'security/security.xml',
